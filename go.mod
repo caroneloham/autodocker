@@ -1,6 +1,6 @@
 module autodocker-go
 
-go 1.26.9
+go 1.26.10
 
 require (
 	github.com/docker/docker v27.5.1+incompatible

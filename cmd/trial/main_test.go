@@ -18,6 +18,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func TestVisitorIPUsesProxyObservedHop(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, "/essai/api/me", nil)
+	request.RemoteAddr = "127.0.0.1:12345"
+	request.Header.Set("X-Forwarded-For", "198.51.100.10, 203.0.113.8")
+	if got := visitorIP(request); got != "203.0.113.8" {
+		t.Fatalf("client-supplied prefix controlled quota IP: %s", got)
+	}
+	request.RemoteAddr = "192.0.2.4:12345"
+	if got := visitorIP(request); got != "192.0.2.4" {
+		t.Fatalf("untrusted peer supplied forwarded IP: %s", got)
+	}
+}
+
 func TestGuestQuotaSeparatesBrowserAndIPLimits(t *testing.T) {
 	quota, err := newAIQuota(filepath.Join(t.TempDir(), "quota.json"))
 	if err != nil {

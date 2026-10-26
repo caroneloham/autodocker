@@ -77,7 +77,10 @@ func (l *limiter) allow(ip string, now time.Time) bool {
 func visitorIP(request *http.Request) string {
 	remote, _, _ := net.SplitHostPort(request.RemoteAddr)
 	if remote == "127.0.0.1" || remote == "::1" {
-		forwarded := strings.TrimSpace(strings.Split(request.Header.Get("X-Forwarded-For"), ",")[0])
+		// The local reverse proxy appends its observed peer as the rightmost hop.
+		// Earlier values may have been supplied by the visitor and cannot key quotas.
+		hops := strings.Split(request.Header.Get("X-Forwarded-For"), ",")
+		forwarded := strings.TrimSpace(hops[len(hops)-1])
 		if ip := net.ParseIP(forwarded); ip != nil {
 			return ip.String()
 		}

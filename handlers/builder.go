@@ -741,6 +741,10 @@ func getUserRoleOnProject(project, username string) string {
 	if err == nil && role == "write" {
 		return "write"
 	}
+	directRole := "none"
+	if err == nil && role == "read" {
+		directRole = "read"
+	}
 
 	// Check ownership
 	var owner string
@@ -757,10 +761,15 @@ func getUserRoleOnProject(project, username string) string {
 		ORDER BY CASE ga.role WHEN 'write' THEN 0 ELSE 1 END
 		LIMIT 1`, username, project).Scan(&role)
 	if err == nil {
-		return role
+		if role == "write" {
+			return "write"
+		}
+		if role == "read" {
+			return "read"
+		}
 	}
 
-	return "none"
+	return directRole
 }
 
 func loadCustomCatalogueFromDB() {
