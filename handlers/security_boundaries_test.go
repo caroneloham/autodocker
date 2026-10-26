@@ -10,6 +10,7 @@ import (
 	"autodocker-go/config"
 	"autodocker-go/db"
 	"autodocker-go/middleware"
+	"github.com/docker/docker/api/types/volume"
 )
 
 func TestPrivateConfigBackupCannotBeDownloadedThroughGenericRoute(t *testing.T) {
@@ -109,10 +110,10 @@ func TestBackupComponentsRejectTraversalAndOtherVolumes(t *testing.T) {
 	if _, ok := backupFilePath("project", "../secret"); ok {
 		t.Fatal("backup traversal accepted")
 	}
-	if volumeBelongsToBackupProject("other_data", "project") {
+	if backupVolumeAllowed(volume.Volume{Name: "other_data", Labels: map[string]string{"com.docker.compose.project": "other"}}, "project", false) {
 		t.Fatal("cross-project volume accepted")
 	}
-	if !volumeBelongsToBackupProject("project_data", "project") {
+	if !backupVolumeAllowed(volume.Volume{Name: "project_data", Labels: map[string]string{"com.docker.compose.project": "project"}}, "project", false) {
 		t.Fatal("ordinary compose volume denied")
 	}
 }
