@@ -77,7 +77,10 @@ func (l *limiter) allow(ip string, now time.Time) bool {
 func visitorIP(request *http.Request) string {
 	remote, _, _ := net.SplitHostPort(request.RemoteAddr)
 	if remote == "127.0.0.1" || remote == "::1" {
-		forwarded := strings.TrimSpace(strings.Split(request.Header.Get("X-Forwarded-For"), ",")[0])
+		// The local reverse proxy appends its observed peer as the rightmost hop.
+		// Earlier values may have been supplied by the visitor and cannot key quotas.
+		hops := strings.Split(request.Header.Get("X-Forwarded-For"), ",")
+		forwarded := strings.TrimSpace(hops[len(hops)-1])
 		if ip := net.ParseIP(forwarded); ip != nil {
 			return ip.String()
 		}
@@ -178,9 +181,8 @@ func main() {
 		c.File(filepath.Join(assets, "tracer", "assets", name))
 	})
 	for _, name := range []string{
-		"Docker-Tracer-0.12.0-Windows-x64.zip",
-		"Docker-Tracer-0.12.1-Windows-x64.zip",
-		"Docker-Tracer-0.12.1-Linux-x64.tar.gz",
+		"Docker-Tracer-0.12.2-Windows-x64.zip",
+		"Docker-Tracer-0.12.2-Linux-x64.tar.gz",
 		"AutoDocker-Windows-x64-preview.zip",
 		"AutoDocker-Linux-x64-preview.tar.gz",
 	} {
@@ -200,6 +202,17 @@ func main() {
 		}
 		router.GET("/essai/downloads/"+name, download)
 		router.HEAD("/essai/downloads/"+name, download)
+	}
+	// Existing links must lead to the patched packages rather than old binaries.
+	for oldName, currentName := range map[string]string{
+		"Docker-Tracer-0.12.0-Windows-x64.zip":  "Docker-Tracer-0.12.2-Windows-x64.zip",
+		"Docker-Tracer-0.12.1-Windows-x64.zip":  "Docker-Tracer-0.12.2-Windows-x64.zip",
+		"Docker-Tracer-0.12.1-Linux-x64.tar.gz": "Docker-Tracer-0.12.2-Linux-x64.tar.gz",
+	} {
+		target := "/essai/downloads/" + currentName
+		redirect := func(c *gin.Context) { c.Redirect(http.StatusTemporaryRedirect, target) }
+		router.GET("/essai/downloads/"+oldName, redirect)
+		router.HEAD("/essai/downloads/"+oldName, redirect)
 	}
 	router.GET("/essai/compte", func(c *gin.Context) { c.Redirect(http.StatusTemporaryRedirect, "/essai/compte/") })
 	router.GET("/essai/compte/", func(c *gin.Context) { c.File(filepath.Join(assets, "compte", "index.html")) })

@@ -29,18 +29,51 @@ import (
 
 // RegisterContainerRoutes registers all container-level API routes.
 func RegisterContainerRoutes(api *gin.RouterGroup) {
-	api.GET("/container/:cid/logs", handleContainerLogs)
-	api.GET("/container/:cid/files", handleContainerFiles)
-	api.GET("/container/:cid/file", handleContainerFileRead)
-	api.POST("/container/:cid/file", handleContainerFileWrite)
-	api.GET("/container/:cid/browse", handleContainerBrowse)
-	api.POST("/container/:cid/upload", handleContainerUpload)
-	api.POST("/container/:cid/ai-edit", handleContainerFileAIEdit)
+	api.GET("/container/:cid/logs", containerProjectAccess(false), handleContainerLogs)
+	api.GET("/container/:cid/files", containerProjectAccess(false), handleContainerFiles)
+	api.GET("/container/:cid/file", containerProjectAccess(false), handleContainerFileRead)
+	api.POST("/container/:cid/file", containerProjectAccess(true), handleContainerFileWrite)
+	api.GET("/container/:cid/browse", containerProjectAccess(false), handleContainerBrowse)
+	api.POST("/container/:cid/upload", containerProjectAccess(true), handleContainerUpload)
+	api.POST("/container/:cid/ai-edit", containerProjectAccess(true), handleContainerFileAIEdit)
 	api.POST("/action", handleContainerAction)
-	api.GET("/container/:cid/inspect", handleContainerInspect)
-	api.GET("/container/:cid/stats", handleContainerStats)
+	api.GET("/container/:cid/inspect", containerProjectAccess(false), handleContainerInspect)
+	api.GET("/container/:cid/stats", containerProjectAccess(false), handleContainerStats)
 	api.GET("/project/:name/compose", handleProjectCompose)
 	api.POST("/project/:name/export", handleProjectExport)
+}
+
+func containerProjectAccess(write bool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user, role := middleware.GetSessionUser(c)
+		if middleware.IsAdminOrAbove(role) {
+			c.Next()
+			return
+		}
+		cli := services.EnsureDocker()
+		if cli == nil {
+			c.AbortWithStatus(http.StatusServiceUnavailable)
+			return
+		}
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+		info, err := cli.ContainerInspect(ctx, c.Param("cid"))
+		if err != nil || info.Config == nil || info.Config.Labels == nil {
+			c.AbortWithStatus(http.StatusForbidden)
+			return
+		}
+		project := info.Config.Labels["com.docker.compose.project"]
+		if !isSafeProjectName(project) {
+			c.AbortWithStatus(http.StatusForbidden)
+			return
+		}
+		projectRole := getUserRoleOnProject(project, user)
+		if projectRole != "write" && (write || projectRole != "read") {
+			c.AbortWithStatus(http.StatusForbidden)
+			return
+		}
+		c.Next()
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -219,7 +252,11 @@ func handleContainerFileRead(c *gin.Context) {
 	defer cancel()
 
 	// Check if it's a local file in the projects dir
-	if isSafeLocalPath(filePath) {
+	if project, ok := localProjectForPath(filePath); ok {
+		if !localProjectAllowed(c, project, false) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Accès refusé à ce projet"})
+			return
+		}
 		if data, err := os.ReadFile(filePath); err == nil {
 			c.JSON(http.StatusOK, gin.H{"status": "ok", "content": string(data), "source": "local"})
 			return
@@ -282,7 +319,11 @@ func handleContainerFileWriteUsing(c *gin.Context, cli containerFileWriteClient)
 	defer cancel()
 
 	// If local file in projects dir
-	if isSafeLocalPath(req.Path) {
+	if project, ok := localProjectForPath(req.Path); ok {
+		if !localProjectAllowed(c, project, true) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Modification refusée sur ce projet"})
+			return
+		}
 		if _, err := os.Stat(req.Path); err == nil {
 			if err := os.WriteFile(req.Path, []byte(req.Content), 0644); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -408,14 +449,13 @@ func handleContainerActionUsing(c *gin.Context, resolveDocker func() containerAc
 	// Check project-level permissions
 	user, role := middleware.GetSessionUser(c)
 	if !middleware.IsAdminOrAbove(role) {
+		project := ""
 		if info.Config != nil && info.Config.Labels != nil {
-			if proj, ok := info.Config.Labels["com.docker.compose.project"]; ok && proj != "" {
-				projRole := getUserRoleOnProject(proj, user)
-				if projRole != "write" {
-					c.JSON(http.StatusForbidden, gin.H{"error": "Permission refusee sur ce projet"})
-					return
-				}
-			}
+			project = info.Config.Labels["com.docker.compose.project"]
+		}
+		if !isSafeProjectName(project) || getUserRoleOnProject(project, user) != "write" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Permission refusee sur ce projet"})
+			return
 		}
 	}
 
@@ -876,17 +916,39 @@ func handleProjectExport(c *gin.Context) {
 // Helpers
 // ---------------------------------------------------------------------------
 
-// isSafeLocalPath checks that the path is within the projects directory.
-func isSafeLocalPath(path string) bool {
-	absPath, err := filepath.Abs(path)
+// localProjectForPath resolves links before admitting a host file under a project.
+func localProjectForPath(filePath string) (string, bool) {
+	absPath, err := filepath.Abs(filePath)
 	if err != nil {
-		return false
+		return "", false
 	}
 	absProjects, err := filepath.Abs(config.ProjectsDir)
 	if err != nil {
-		return false
+		return "", false
 	}
-	return strings.HasPrefix(absPath, absProjects)
+	resolvedPath, err := filepath.EvalSymlinks(absPath)
+	if err != nil {
+		return "", false
+	}
+	resolvedProjects, err := filepath.EvalSymlinks(absProjects)
+	if err != nil {
+		return "", false
+	}
+	rel, err := filepath.Rel(resolvedProjects, resolvedPath)
+	if err != nil || rel == "." || filepath.IsAbs(rel) || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", false
+	}
+	project := strings.Split(rel, string(filepath.Separator))[0]
+	return project, isSafeProjectName(project) && rel != project
+}
+
+func localProjectAllowed(c *gin.Context, project string, write bool) bool {
+	user, role := middleware.GetSessionUser(c)
+	if middleware.IsAdminOrAbove(role) {
+		return true
+	}
+	projectRole := getUserRoleOnProject(project, user)
+	return projectRole == "write" || !write && projectRole == "read"
 }
 
 // tailN returns the last n lines of a string.

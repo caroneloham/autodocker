@@ -21,19 +21,19 @@ import (
 // RegisterProxyRoutes registers the reverse proxy for container ports.
 func RegisterProxyRoutes(r *gin.Engine) {
 	proxy := r.Group("/api/proxy")
-	proxy.Use(middleware.LoginRequired())
+	proxy.Use(middleware.LoginRequired(), middleware.ProxyOriginProtection())
 	{
 		proxy.Any("/:port/*path", handleProxy)
 		proxy.Any("/:port", handleProxy)
 	}
 	portView := r.Group("/api/port-view")
-	portView.Use(middleware.LoginRequired())
+	portView.Use(middleware.LoginRequired(), middleware.ProxyOriginProtection())
 	{
 		portView.Any("/:port/*path", handleProxy)
 		portView.Any("/:port", handleProxy)
 	}
 	tokenView := r.Group("/view")
-	tokenView.Use(middleware.LoginRequired())
+	tokenView.Use(middleware.LoginRequired(), middleware.ProxyOriginProtection())
 	{
 		tokenView.Any("/:token/*path", handleProxy)
 		tokenView.Any("/:token", handleProxy)

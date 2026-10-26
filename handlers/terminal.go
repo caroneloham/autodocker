@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
+	"autodocker-go/middleware"
 	"autodocker-go/services"
 
 	"github.com/docker/docker/api/types/container"
@@ -16,7 +19,19 @@ import (
 )
 
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true },
+	CheckOrigin: terminalSameOrigin,
+}
+
+func terminalSameOrigin(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	u, err := url.Parse(origin)
+	if err != nil || u.User != nil || u.Host == "" || !strings.EqualFold(u.Host, r.Host) || u.Path != "" || u.RawQuery != "" || u.Fragment != "" {
+		return false
+	}
+	if r.TLS != nil {
+		return u.Scheme == "https"
+	}
+	return u.Scheme == "http" || u.Scheme == "https"
 }
 
 // RegisterTerminalRoutes registers the WebSocket terminal endpoint.
@@ -43,6 +58,20 @@ func handleTerminalWS(c *gin.Context) {
 	if cli == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Docker non connecte"})
 		return
+	}
+	userName, role := middleware.GetSessionUser(c)
+	if !middleware.IsAdminOrAbove(role) {
+		inspectCtx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		info, err := cli.ContainerInspect(inspectCtx, cid)
+		cancel()
+		project := ""
+		if err == nil && info.Config != nil && info.Config.Labels != nil {
+			project = info.Config.Labels["com.docker.compose.project"]
+		}
+		if !isSafeProjectName(project) || getUserRoleOnProject(project, userName) != "write" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Permission refusee sur ce projet"})
+			return
+		}
 	}
 
 	// Upgrade to WebSocket

@@ -3,11 +3,13 @@ package handlers
 import (
 	"archive/zip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -41,10 +43,46 @@ func RegisterBackupRoutes(api *gin.RouterGroup) {
 		g.POST("/schedules", middleware.AdminRequired(), handleCreateOrUpdateSchedule)
 		g.DELETE("/schedules/:id", middleware.AdminRequired(), handleDeleteSchedule)
 
-		g.POST("/config/create", handleCreateConfigBackup)
-		g.GET("/config/list", handleListConfigBackups)
-		g.GET("/config/download/:id", handleDownloadConfigBackup)
+		g.POST("/config/create", middleware.AccountOwnerRequired(), handleCreateConfigBackup)
+		g.GET("/config/list", middleware.AccountOwnerRequired(), handleListConfigBackups)
+		g.GET("/config/download/:id", middleware.AccountOwnerRequired(), handleDownloadConfigBackup)
 	}
+}
+
+var backupComponentRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]{0,199}$`)
+
+func validBackupComponent(value string) bool {
+	return value != "." && value != ".." && backupComponentRE.MatchString(value)
+}
+
+func backupFilePath(project, filename string) (string, bool) {
+	if (project != "__autodocker__" && !validBackupComponent(project)) || !validBackupComponent(filename) || filepath.Base(filename) != filename {
+		return "", false
+	}
+	return filepath.Join(config.BackupsDir, project, filename), true
+}
+
+func backupProjectAllowed(c *gin.Context, project string, write bool) bool {
+	if project == "__autodocker__" {
+		return middleware.IsAccountOwner(c)
+	}
+	if !isSafeProjectName(project) {
+		return false
+	}
+	user, role := middleware.GetSessionUser(c)
+	if middleware.IsAdminOrAbove(role) {
+		return true
+	}
+	projectRole := getUserRoleOnProject(project, user)
+	return projectRole == "write" || !write && projectRole == "read"
+}
+
+func requireBackupProject(c *gin.Context, project string, write bool) bool {
+	if !backupProjectAllowed(c, project, write) {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Accès refusé à ce projet"})
+		return false
+	}
+	return true
 }
 
 // ---------------------------------------------------------------------------
@@ -76,14 +114,25 @@ func getSessionUser(c *gin.Context) string {
 // Core: backup a Docker volume using alpine tar
 // ---------------------------------------------------------------------------
 
-func backupVolume(volumeName, project, createdBy string) (map[string]interface{}, error) {
+func backupVolume(volumeName, project, createdBy string, allowUnlabelled bool) (map[string]interface{}, error) {
+	if !isSafeProjectName(project) || project == "__autodocker__" || !validBackupComponent(volumeName) {
+		return nil, fmt.Errorf("projet ou volume invalide")
+	}
 	cli := services.EnsureDocker()
 	if cli == nil {
 		return nil, fmt.Errorf("Docker non connecte")
 	}
+	if err := checkBackupVolume(cli, volumeName, project, allowUnlabelled); err != nil {
+		return nil, err
+	}
 
 	backupDir := filepath.Join(config.BackupsDir, project)
-	os.MkdirAll(backupDir, 0755)
+	if err := os.MkdirAll(backupDir, 0700); err != nil {
+		return nil, err
+	}
+	if err := os.Chmod(backupDir, 0700); err != nil {
+		return nil, err
+	}
 
 	filename := fmt.Sprintf("%s_%s.tar.gz", volumeName, time.Now().Format("20060102_150405"))
 	nowStr := time.Now().Format("2006-01-02 15:04:05")
@@ -153,6 +202,46 @@ func backupVolume(volumeName, project, createdBy string) (map[string]interface{}
 	}, nil
 }
 
+var errBackupVolumeAccess = errors.New("accès refusé à ce volume")
+
+// Names are not ownership evidence: foo_bar_data may belong to foo_bar, not foo.
+// Legacy/external unlabelled volumes require an administrator's explicit action.
+func backupVolumeAllowed(info volume.Volume, project string, allowUnlabelled bool) bool {
+	if !validBackupComponent(info.Name) || !isSafeProjectName(project) || project == "__autodocker__" {
+		return false
+	}
+	if owner := info.Labels["com.docker.compose.project"]; owner != "" {
+		return owner == project
+	}
+	return allowUnlabelled && (info.Name == project || strings.HasPrefix(info.Name, project+"_"))
+}
+
+type backupVolumeInspector interface {
+	VolumeInspect(context.Context, string) (volume.Volume, error)
+}
+
+func checkBackupVolume(cli backupVolumeInspector, volumeName, project string, allowUnlabelled bool) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	info, err := cli.VolumeInspect(ctx, volumeName)
+	if err != nil || info.Name != volumeName || !backupVolumeAllowed(info, project, allowUnlabelled) {
+		return errBackupVolumeAccess
+	}
+	return nil
+}
+
+func backupContextPrivileged(c *gin.Context) bool {
+	_, role := middleware.GetSessionUser(c)
+	return middleware.IsAccountOwner(c) || middleware.IsAdminOrAbove(role)
+}
+
+func backupCreatorPrivileged(username string) bool {
+	var role string
+	var disabled int
+	return db.DB.QueryRow("SELECT role, disabled FROM users WHERE username=?", username).Scan(&role, &disabled) == nil && disabled == 0 &&
+		(username == middleware.AccountOwnerUsername() || middleware.IsAdminOrAbove(role))
+}
+
 func recordBackupHistory(project, volumeName, filename string, sizeBytes int64, status, createdAt, createdBy string) {
 	_, _ = db.DB.Exec(
 		"INSERT INTO backup_history (project, volume_name, filename, size_bytes, status, created_at, created_by) VALUES (?,?,?,?,?,?,?)",
@@ -194,9 +283,10 @@ func applyRetention(project, volumeName string) {
 		return
 	}
 
-	backupDir := filepath.Join(config.BackupsDir, project)
 	for _, e := range all[retentionCount:] {
-		os.Remove(filepath.Join(backupDir, e.filename))
+		if path, ok := backupFilePath(project, e.filename); ok {
+			os.Remove(path)
+		}
 		db.DB.Exec("DELETE FROM backup_history WHERE id=?", e.id)
 	}
 }
@@ -205,7 +295,7 @@ func applyRetention(project, volumeName string) {
 // Restore
 // ---------------------------------------------------------------------------
 
-func restoreVolume(backupID int) (map[string]interface{}, error) {
+func restoreVolume(backupID int, allowUnlabelled bool) (map[string]interface{}, error) {
 	cli := services.EnsureDocker()
 	if cli == nil {
 		return nil, fmt.Errorf("Docker non connecte")
@@ -217,6 +307,12 @@ func restoreVolume(backupID int) (map[string]interface{}, error) {
 	).Scan(&project, &volumeName, &filename)
 	if err != nil {
 		return nil, fmt.Errorf("sauvegarde introuvable (id=%d)", backupID)
+	}
+	if project == "__autodocker__" || !isSafeProjectName(project) || !validBackupComponent(volumeName) || !validBackupComponent(filename) || !strings.HasSuffix(filename, ".tar.gz") {
+		return nil, fmt.Errorf("sauvegarde invalide")
+	}
+	if err := checkBackupVolume(cli, volumeName, project, allowUnlabelled); err != nil {
+		return nil, err
 	}
 
 	fpath := filepath.Join(config.BackupsDir, project, filename)
@@ -273,15 +369,24 @@ func restoreVolume(backupID int) (map[string]interface{}, error) {
 
 func backupAutodockerConfig(createdBy string) (map[string]interface{}, error) {
 	configBackupDir := filepath.Join(config.BackupsDir, "__autodocker__")
-	os.MkdirAll(configBackupDir, 0755)
+	if err := os.MkdirAll(configBackupDir, 0700); err != nil {
+		return nil, err
+	}
+	if err := os.Chmod(configBackupDir, 0700); err != nil {
+		return nil, err
+	}
 
 	timestamp := time.Now().Format("20060102_150405")
 	filename := fmt.Sprintf("autodocker_config_%s.zip", timestamp)
 	fpath := filepath.Join(configBackupDir, filename)
 
-	zf, err := os.Create(fpath)
+	zf, err := os.OpenFile(fpath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return nil, fmt.Errorf("impossible de creer le zip: %w", err)
+	}
+	if err := zf.Chmod(0600); err != nil {
+		zf.Close()
+		return nil, err
 	}
 	zw := zip.NewWriter(zf)
 
@@ -364,6 +469,9 @@ func backupAutodockerConfig(createdBy string) (map[string]interface{}, error) {
 }
 
 func addFileToZip(zw *zip.Writer, srcPath, arcName string) error {
+	if info, err := os.Lstat(srcPath); err != nil || !info.Mode().IsRegular() {
+		return fmt.Errorf("fichier de sauvegarde indisponible")
+	}
 	f, err := os.Open(srcPath)
 	if err != nil {
 		return err
@@ -454,6 +562,7 @@ func CheckSchedules() {
 		rows.Scan(&s.id, &s.project, &s.volumeName, &s.cronExpr, &s.lastRun, &s.createdBy)
 		schedules = append(schedules, s)
 	}
+	rows.Close()
 
 	for _, sched := range schedules {
 		if !cronMatches(sched.cronExpr, now) {
@@ -476,7 +585,7 @@ func CheckSchedules() {
 		if sched.project == "__autodocker__" && sched.volumeName == "config" {
 			backupInfo, backupErr = backupAutodockerConfig(createdBy)
 		} else {
-			backupInfo, backupErr = backupVolume(sched.volumeName, sched.project, createdBy)
+			backupInfo, backupErr = backupVolume(sched.volumeName, sched.project, createdBy, backupCreatorPrivileged(createdBy))
 		}
 
 		if backupErr != nil {
@@ -505,6 +614,9 @@ func handleListBackups(c *gin.Context) {
 	project := c.Query("project")
 	if project == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": "Parametre project requis"})
+		return
+	}
+	if !requireBackupProject(c, project, false) {
 		return
 	}
 
@@ -551,12 +663,23 @@ func handleCreateBackup(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": "Les champs project et volume_name sont requis"})
 		return
 	}
+	if !requireBackupProject(c, body.Project, true) {
+		return
+	}
+	if !validBackupComponent(body.VolumeName) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Volume invalide"})
+		return
+	}
 
 	username := getSessionUser(c)
 
-	info, err := backupVolume(body.VolumeName, body.Project, username)
+	info, err := backupVolume(body.VolumeName, body.Project, username, backupContextPrivileged(c))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "error": err.Error()})
+		status := http.StatusInternalServerError
+		if errors.Is(err, errBackupVolumeAccess) {
+			status = http.StatusForbidden
+		}
+		c.JSON(status, gin.H{"status": "error", "error": err.Error()})
 		return
 	}
 
@@ -573,14 +696,25 @@ func handleRestoreBackup(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": "Champ backup_id requis"})
 		return
 	}
+	var project string
+	if db.DB.QueryRow("SELECT project FROM backup_history WHERE id=?", body.BackupID).Scan(&project) != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Sauvegarde introuvable"})
+		return
+	}
+	if !requireBackupProject(c, project, true) {
+		return
+	}
 
 	username := getSessionUser(c)
 
-	result, err := restoreVolume(body.BackupID)
+	result, err := restoreVolume(body.BackupID, backupContextPrivileged(c))
 	if err != nil {
 		status := http.StatusInternalServerError
 		if strings.Contains(err.Error(), "introuvable") {
 			status = http.StatusNotFound
+		}
+		if errors.Is(err, errBackupVolumeAccess) {
+			status = http.StatusForbidden
 		}
 		c.JSON(status, gin.H{"status": "error", "error": err.Error()})
 		return
@@ -605,8 +739,14 @@ func handleDownloadBackup(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"status": "error", "error": "Sauvegarde introuvable"})
 		return
 	}
-
-	fpath := filepath.Join(config.BackupsDir, project, filename)
+	if !requireBackupProject(c, project, false) {
+		return
+	}
+	fpath, ok := backupFilePath(project, filename)
+	if !ok {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
 	if _, err := os.Stat(fpath); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": "error", "error": "Fichier introuvable sur le disque"})
 		return
@@ -632,7 +772,14 @@ func handleDeleteBackup(c *gin.Context) {
 		return
 	}
 
-	fpath := filepath.Join(config.BackupsDir, project, filename)
+	if !requireBackupProject(c, project, true) {
+		return
+	}
+	fpath, ok := backupFilePath(project, filename)
+	if !ok {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
 	os.Remove(fpath)
 	db.DB.Exec("DELETE FROM backup_history WHERE id=?", id)
 
@@ -644,6 +791,9 @@ func handleListVolumes(c *gin.Context) {
 	project := c.Query("project")
 	if project == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": "Parametre project requis"})
+		return
+	}
+	if !requireBackupProject(c, project, false) {
 		return
 	}
 
@@ -664,7 +814,7 @@ func handleListVolumes(c *gin.Context) {
 
 	var matching []string
 	for _, v := range volumeList.Volumes {
-		if strings.HasPrefix(v.Name, project+"_") || v.Name == project {
+		if backupVolumeAllowed(*v, project, backupContextPrivileged(c)) {
 			matching = append(matching, v.Name)
 		}
 	}
@@ -700,10 +850,17 @@ func handleListSchedules(c *gin.Context) {
 			"created_at":      createdAt,
 		})
 	}
-	if schedules == nil {
-		schedules = []gin.H{}
+	rows.Close()
+	visible := schedules[:0]
+	for _, schedule := range schedules {
+		if backupProjectAllowed(c, schedule["project"].(string), false) {
+			visible = append(visible, schedule)
+		}
 	}
-	c.JSON(http.StatusOK, gin.H{"status": "ok", "schedules": schedules})
+	if visible == nil {
+		visible = []gin.H{}
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "ok", "schedules": visible})
 }
 
 func handleCreateOrUpdateSchedule(c *gin.Context) {
@@ -717,6 +874,28 @@ func handleCreateOrUpdateSchedule(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&body); err != nil || body.Project == "" || body.VolumeName == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "error": "Les champs project et volume_name sont requis"})
+		return
+	}
+	if !requireBackupProject(c, body.Project, true) {
+		return
+	}
+	if body.Project != "__autodocker__" && !validBackupComponent(body.VolumeName) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Volume invalide"})
+		return
+	}
+	if body.Project != "__autodocker__" {
+		cli := services.EnsureDocker()
+		if cli == nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Docker non connecte"})
+			return
+		}
+		if err := checkBackupVolume(cli, body.VolumeName, body.Project, backupContextPrivileged(c)); err != nil {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+	}
+	if body.Project == "__autodocker__" && body.VolumeName != "config" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Planification invalide"})
 		return
 	}
 
@@ -735,12 +914,16 @@ func handleCreateOrUpdateSchedule(c *gin.Context) {
 	action := "creee"
 
 	if body.ID != nil && *body.ID > 0 {
-		_, err := db.DB.Exec(
-			"UPDATE backup_schedules SET cron_expr=?, retention_count=?, enabled=? WHERE id=?",
-			body.CronExpr, body.RetentionCount, enabled, *body.ID,
+		result, err := db.DB.Exec(
+			"UPDATE backup_schedules SET cron_expr=?, retention_count=?, enabled=? WHERE id=? AND project=? AND volume_name=?",
+			body.CronExpr, body.RetentionCount, enabled, *body.ID, body.Project, body.VolumeName,
 		)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "error": err.Error()})
+			return
+		}
+		if changed, err := result.RowsAffected(); err != nil || changed == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Planification introuvable"})
 			return
 		}
 		action = "modifiee"
@@ -776,6 +959,9 @@ func handleDeleteSchedule(c *gin.Context) {
 	err := db.DB.QueryRow("SELECT project, volume_name FROM backup_schedules WHERE id=?", id).Scan(&project, &volumeName)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": "error", "error": "Planification introuvable"})
+		return
+	}
+	if !requireBackupProject(c, project, true) {
 		return
 	}
 
@@ -844,7 +1030,11 @@ func handleDownloadConfigBackup(c *gin.Context) {
 		return
 	}
 
-	fpath := filepath.Join(config.BackupsDir, "__autodocker__", filename)
+	fpath, ok := backupFilePath("__autodocker__", filename)
+	if !ok {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
 	if _, err := os.Stat(fpath); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": "error", "error": "Fichier introuvable"})
 		return
@@ -853,4 +1043,3 @@ func handleDownloadConfigBackup(c *gin.Context) {
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
 	c.File(fpath)
 }
-
