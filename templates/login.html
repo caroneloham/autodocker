@@ -1,58 +1,43 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
-  <title>Accès à AutoDocker</title>
+  <title>Connexion — AutoDocker</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script>
+    (function(){var theme='dark';try{if(localStorage.getItem('autodocker:theme')==='light')theme='light';}catch{}document.documentElement.dataset.theme=theme;})();
+  </script>
+  <link rel="stylesheet" href="/workspace.css">
   <style>
-    :root { color-scheme: dark; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0d1117; color: #f3f6fc; }
-    * { box-sizing: border-box; }
-    body { min-height: 100svh; margin: 0; display: grid; place-items: center; padding: 24px; }
-    main { width: min(100%, 460px); }
-    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 36px; font-size: 23px; font-weight: 650; letter-spacing: -.7px; }
-    .brand svg { width: 34px; height: 34px; color: #70a4ff; }
-    .access { padding: 28px; background: #161d27; border: 1px solid #2b3747; border-radius: 16px; }
-    .demo { padding: 28px; margin-bottom: 16px; background: linear-gradient(145deg, #153448, #14243a); border: 1px solid #397c93; border-radius: 16px; }
-    .demo h1 { margin-bottom: 8px; }
-    .demo p { margin-bottom: 18px; }
-    .demo a { display: block; text-align: center; padding: 14px; background: #69e2d2; border-radius: 8px; color: #09252d; font-weight: 700; text-decoration: none; }
-    .demo a:hover { background: #9bf2e5; }
-    .demo a:focus-visible, .secondary-link:focus-visible { outline: 3px solid #b1cfff; outline-offset: 3px; }
-    .secondary-link { display: inline-block; margin-top: 14px; color: #a9eae2; font-size: 14px; }
-    h1 { margin: 0 0 10px; font-size: 24px; font-weight: 650; letter-spacing: -.6px; }
-    p { color: #b6c4d6; font-size: 15px; line-height: 1.6; margin: 0 0 26px; }
-    label { display: block; margin-bottom: 10px; font-size: 14px; font-weight: 600; }
-    input { width: 100%; border: 1px solid #42516a; border-radius: 8px; background: #0d131c; padding: 14px; font: inherit; color: #f3f6fc; }
-    input:focus-visible { outline: 3px solid #4f8cff55; border-color: #70a4ff; }
-    button { width: 100%; margin-top: 18px; padding: 14px; background: #4f8cff; border: 0; border-radius: 8px; font: inherit; font-weight: 650; color: #081324; cursor: pointer; }
-    button:hover { background: #75a5ff; }
-    button:focus-visible { outline: 3px solid #b1cfff; outline-offset: 3px; }
-    .error { padding: 12px; margin-bottom: 20px; color: #ffd2d2; background: #47222c; border-radius: 8px; font-size: 14px; }
-    footer { color: #a2b2c6; margin-top: 24px; text-align: center; font-size: 13px; }
+    body { min-height:100svh;display:grid;place-items:center;padding:32px 20px; }
+    .login-shell { width:min(100%,420px);padding:0; }
+    .login-shell .brand { margin-bottom:40px; }
+    .login-shell .brand svg { width:32px;height:32px;color:var(--blue-light); }
+    .login-shell h1 { margin-bottom:28px;font-size:28px;letter-spacing:-.8px; }
+    .login-form { display:grid;gap:20px; }
+    .login-field label { display:block;margin-bottom:8px;font-size:14px;font-weight:500; }
+    .login-field input { width:100%;min-height:48px;padding:11px 13px;border:1px solid var(--line);border-radius:7px;background:var(--surface-input);color:var(--text); }
+    .login-form .button { width:100%;justify-content:center;margin-top:4px; }
+    .login-shell .error-box { margin:0 0 24px; }
   </style>
 </head>
 <body>
-  <main>
-    <div class="brand"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="m16 2 12 7v14l-12 7L4 23V9l12-7Zm0 14 12-7M16 16 4 9m12 7v14M10 5.5l12 7" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>AutoDocker</div>
-    <section class="demo" aria-labelledby="demo-title">
-      <h1 id="demo-title">Essayez gratuitement, sans compte</h1>
-      <p>Créez une infrastructure avec AutoDocker et visualisez votre fichier Compose avec Docker Tracer. Deux demandes à l’IA sont offertes avant de créer un compte gratuit.</p>
-      <a href="/essai/">Lancer l’essai gratuit →</a>
-      <a class="secondary-link" href="/essai/tracer/">Visualiser un Compose avec Docker Tracer</a>
-    </section>
-    <section class="access" aria-labelledby="access-title">
-      <h1 id="access-title">Accès à la plateforme privée</h1>
-      <p>Réservé aux comptes créés par le propriétaire.</p>
-      {{if .Error}}<div class="error" role="alert">{{.Error}}</div>{{end}}
-      <form method="post" action="/login">
-        {{if .TOTPStep}}<input type="hidden" name="totp_step" value="1"><label for="totp-code">Code de vérification</label><input id="totp-code" name="totp_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required autofocus>{{else}}<label for="access-username">Identifiant</label><input id="access-username" name="username" value="{{.Username}}" maxlength="32" autocomplete="username" required autofocus style="margin-bottom:20px">
-        <label for="access-password">Mot de passe</label>
-        <input id="access-password" type="password" name="password" required autocomplete="current-password">{{end}}
-        <button type="submit">Accéder à AutoDocker →</button>
-      </form>
-    </section>
-    <footer>Composez votre infrastructure, simplement.</footer>
+  <main class="login-shell">
+    <a class="brand" href="/" aria-label="AutoDocker, accueil"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="m16 3 12 7v12l-12 7L4 22V10L16 3Z M4 10l12 7 12-7 M16 17v12 M10 6.5l12 7v5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span>AutoDocker</span></a>
+    <h1>Connexion</h1>
+    {{if .Error}}<p class="error-box" role="alert">{{.Error}}</p>{{end}}
+    <form class="login-form" method="post" action="/login">
+      {{if .TOTPStep}}
+      <input type="hidden" name="totp_step" value="1">
+      <div class="login-field"><label for="totp-code">Code de vérification</label><input id="totp-code" name="totp_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required autofocus></div>
+      {{else}}
+      <div class="login-field"><label for="access-username">Identifiant</label><input id="access-username" type="text" name="username" value="{{.Username}}" maxlength="32" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus></div>
+      <div class="login-field"><label for="access-password">Mot de passe</label><input id="access-password" type="password" name="password" required autocomplete="current-password"></div>
+      {{end}}
+      <button class="button primary" type="submit">Se connecter</button>
+    </form>
   </main>
 </body>
 </html>
