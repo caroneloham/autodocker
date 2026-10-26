@@ -1,0 +1,22 @@
+{
+  "category": "monitoring",
+  "description": "Grafana + Prometheus + Traefik pour supervision",
+  "icon": "chart",
+  "name": "Monitoring Stack",
+  "template": {
+    "services": [
+      {
+        "key": "grafana",
+        "network": "monitoring"
+      },
+      {
+        "key": "prometheus",
+        "network": "monitoring"
+      },
+      {
+        "key": "traefik",
+        "network": "monitoring"
+      }
+    ]
+  }
+}

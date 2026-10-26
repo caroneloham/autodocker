@@ -1,0 +1,54 @@
+{
+  "category": "enterprise",
+  "description": "Stack complete : Web + DB + Monitoring + Security + Admin",
+  "icon": "server",
+  "name": "Infra Complete",
+  "template": {
+    "services": [
+      {
+        "key": "traefik",
+        "network": "web"
+      },
+      {
+        "key": "nginx",
+        "network": "web"
+      },
+      {
+        "key": "wordpress",
+        "network": "web"
+      },
+      {
+        "key": "mariadb",
+        "network": "db"
+      },
+      {
+        "key": "postgres",
+        "network": "db"
+      },
+      {
+        "key": "adminer",
+        "network": "db"
+      },
+      {
+        "key": "nextcloud",
+        "network": "collab"
+      },
+      {
+        "key": "grafana",
+        "network": "monitoring"
+      },
+      {
+        "key": "prometheus",
+        "network": "monitoring"
+      },
+      {
+        "key": "portainer",
+        "network": "admin"
+      },
+      {
+        "key": "fail2ban",
+        "network": "security"
+      }
+    ]
+  }
+}

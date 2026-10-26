@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Un compte gratuit pour continuer à essayer l’assistant AutoDocker.">
+  <title>Compte gratuit · AutoDocker</title>
+  <link rel="icon" href="/essai/tracer/assets/autodocker-logo-CvCraBGd.png" type="image/png">
+  <script>try{document.documentElement.dataset.theme=localStorage.getItem('autodocker:theme')==='light'?'light':'dark'}catch{document.documentElement.dataset.theme='dark'}</script>
+  <link rel="stylesheet" href="/essai/workspace.css">
+  <script src="/essai/compte/account.js" defer></script>
+  <style>
+    .account-header{display:flex;align-items:center;justify-content:space-between;gap:20px;max-width:1080px;margin:auto;padding:26px 22px;border-bottom:1px solid var(--line)}
+    .account-brand{font-size:21px;font-weight:700;color:var(--text);letter-spacing:-.6px}
+    .account-header nav{display:flex;gap:22px;font-size:14px}
+    .account-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,410px);gap:56px;align-items:center;max-width:1080px;min-height:calc(100vh - 85px);margin:auto;padding:64px 22px 100px}
+    .account-intro h1{max-width:650px;font-size:clamp(35px,5vw,62px);letter-spacing:-2.6px;line-height:1.06}
+    .account-intro>p:not(.eyebrow){max-width:540px;margin-top:24px;color:var(--secondary);font-size:18px;line-height:1.65}
+    .account-points{display:grid;gap:16px;margin:34px 0 0;padding:0;list-style:none;color:var(--secondary)}
+    .account-points li{display:flex;gap:12px;align-items:flex-start}
+    .account-points li::before{content:'✓';display:grid;place-items:center;flex:none;width:23px;height:23px;border-radius:7px;background:var(--selected);color:var(--blue-light);font-size:14px;font-weight:700}
+    .account-card{padding:30px;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 26px 65px #0002}
+    .account-card h2{font-size:25px;letter-spacing:-.7px;line-height:1.2}
+    .account-note{margin:11px 0 23px;color:var(--secondary);font-size:14px}
+    .account-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:25px;padding:4px;border-radius:10px;background:var(--surface-input)}
+    .account-tabs button{border:0;border-radius:7px;background:transparent;color:var(--secondary);padding:10px;font-size:14px;font-weight:600}
+    .account-tabs button[aria-selected="true"]{background:var(--surface-raised);color:var(--text)}
+    .account-card label{display:block;margin:16px 0 7px;font-size:13px;font-weight:600}
+    .account-card input{width:100%;height:45px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-input);color:var(--text)}
+    .account-card input:focus-visible{outline:2px solid var(--blue-light)}
+    .account-hint{margin-top:7px;color:var(--muted);font-size:12px}
+    .account-submit{width:100%;margin-top:23px;padding:13px 20px;border:0;border-radius:8px;background:var(--blue);color:#fff;font-weight:700}
+    .account-submit:hover{background:var(--blue-hover)}
+    .account-submit:disabled{opacity:.6}
+    .account-message{min-height:20px;margin-top:15px;color:var(--secondary);font-size:13px}
+    .account-message.error{color:#ffaaa6}
+    .account-privacy{margin-top:24px;padding-top:20px;border-top:1px solid var(--line-soft);color:var(--muted);font-size:12px;line-height:1.55}
+    .account-privacy strong{color:var(--secondary)}
+    .account-current{padding:18px;border:1px solid var(--blue-line);border-radius:10px;background:var(--selected)}
+    .account-current p{margin-top:8px;color:var(--secondary)}
+    .account-current button{margin-top:18px;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface-raised)}
+    @media(max-width:780px){.account-main{grid-template-columns:1fr;gap:38px;padding-top:52px}.account-intro h1{font-size:40px}.account-header nav{gap:13px}.account-card{padding:24px}}
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Aller au contenu</a>
+  <header class="account-header"><a class="account-brand" href="/essai/"><span class="autodocker-logo" aria-hidden="true"><img src="/essai/tracer/assets/autodocker-logo-CvCraBGd.png" alt="" draggable="false"></span>AutoDocker</a><nav aria-label="Navigation"><a href="/essai/">Créer</a><a href="/essai/tracer/">Voir mon infrastructure</a></nav></header>
+  <main id="main" class="account-main">
+    <div class="account-intro">
+      <p class="eyebrow">Essai public</p>
+      <h1>Explorez librement. Créez un compte pour continuer avec l’IA.</h1>
+      <p>Le catalogue, la génération et la visualisation d’un fichier Compose sont gratuits et accessibles sans compte. Vous pouvez aussi essayer l’assistant deux fois sans inscription.</p>
+      <ul class="account-points"><li>Compte gratuit, sans carte bancaire.</li><li>Cinq demandes IA par jour avec votre compte, dans la limite de capacité de la démo.</li><li>Aucun conteneur n’est lancé sur ce site.</li></ul>
+    </div>
+    <section class="account-card" aria-labelledby="account-title">
+      <div id="account-forms">
+        <h2 id="account-title">Votre compte gratuit</h2>
+        <p class="account-note">Un identifiant et un mot de passe suffisent.</p>
+        <div class="account-tabs" role="tablist" aria-label="Compte"><button type="button" id="tab-signup" role="tab" aria-selected="true" aria-controls="account-form">Créer un compte</button><button type="button" id="tab-login" role="tab" aria-selected="false" aria-controls="account-form">Se connecter</button></div>
+        <form id="account-form" autocomplete="on">
+          <label for="account-name">Identifiant</label>
+          <input id="account-name" name="username" type="text" minlength="3" maxlength="32" pattern="[A-Za-z0-9][A-Za-z0-9_-]{2,31}" autocomplete="username" required>
+          <p class="account-hint">3 à 32 caractères : lettres, chiffres, tiret ou soulignement.</p>
+          <label for="account-password">Mot de passe</label>
+          <input id="account-password" name="password" type="password" minlength="10" maxlength="72" autocomplete="new-password" required>
+          <p id="password-hint" class="account-hint">Au moins 10 caractères, 72 octets au maximum. Gardez-le : il n’y a pas de récupération par e-mail dans cet essai.</p>
+          <button class="account-submit" id="account-submit" type="submit">Créer mon compte gratuit</button>
+        </form>
+      </div>
+      <div id="account-signed-in" class="account-current" hidden><h2>Vous êtes connecté</h2><p>Compte : <strong id="current-name"></strong></p><p>Votre compte permet de continuer l’essai de l’assistant.</p><a href="/essai/">Retour à AutoDocker →</a><br><button id="account-logout" type="button">Se déconnecter</button></div>
+      <p id="account-message" class="account-message" role="status" aria-live="polite"></p>
+      <p class="account-privacy"><strong>Confidentialité :</strong> un cookie de session nécessaire garde votre connexion. Un quota par visiteur limite les abus. Aucun cookie publicitaire n’est utilisé par cet essai. L’identifiant et une empreinte du mot de passe sont stockés pour gérer votre compte.</p>
+    </section>
+  </main>
+</body>
+</html>

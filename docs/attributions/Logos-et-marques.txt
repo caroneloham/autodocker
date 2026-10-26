@@ -1,0 +1,25 @@
+Logos affiches par AutoDocker
+=============================
+
+Les dessins des marques ci-dessous proviennent de Simple Icons, revision
+c71c69e3a27e4436936b831c72643e6513b9f49b, et sont integres dans
+l'interface AutoDocker. Source :
+https://github.com/simple-icons/simple-icons/tree/c71c69e3a27e4436936b831c72643e6513b9f49b/icons
+
+Licence de la collection : CC0 1.0 Universal ; texte joint dans
+docs/attributions/Simple-Icons-CC0.txt. Cette licence ne donne pas de droits
+sur les marques des entreprises representees. Ces logos servent seulement
+a identifier les logiciels proposes dans l'interface ; ils n'impliquent
+aucune affiliation ni approbation.
+
+Fichiers de la collection utilises (la couleur a ete ajoutee au SVG) :
+adminer.svg, caddy.svg, debian.svg, gitea.svg, grafana.svg,
+mariadb.svg, meilisearch.svg, minio.svg, mongodb.svg, moodle.svg,
+n8n.svg, nextcloud.svg, nginx.svg, ollama.svg, portainer.svg,
+postgresql.svg, prometheus.svg, rabbitmq.svg, redis.svg, traefik.svg,
+uptimekuma.svg, wordpress.svg.
+
+L'interface utilise le logo MongoDB pour Mongo Express, PostgreSQL pour
+pgAdmin, Debian pour Debian Router, Grafana pour Grafana Loki et
+Prometheus pour Prometheus Core. DokuWiki, Open WebUI, Fail2ban et
+Minecraft utilisent un pictogramme generique dessine pour AutoDocker.

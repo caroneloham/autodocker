@@ -1,0 +1,39 @@
+LICENCE AUTODOCKER ET DOCKER TRACER — VERSION 1.0
+Code source accessible ; usage professionnel autorisé ; commercialisation du logiciel interdite.
+
+Copyright © 2026 Eloham et les titulaires mentionnés dans les notices du logiciel.
+
+1. Périmètre
+Cette licence s'applique aux éléments d'AutoDocker et de Docker Tracer dont le titulaire des droits a expressément choisi cette licence : code source, exécutables, interfaces et documentation associés (le « Logiciel »). Elle s'applique aussi aux adaptations de ces éléments. Les composants tiers restent soumis à leurs propres licences et notices ; la présente licence ne réduit aucun droit qu'ils accordent séparément.
+
+2. Droits accordés gratuitement
+Sous réserve des conditions ci-dessous, vous pouvez installer, exécuter, étudier, copier et modifier le Logiciel, y compris au sein d'une entreprise, d'une association ou d'une administration, sans limite liée à la taille de l'organisation. Vous pouvez l'utiliser pour réaliser des projets pour vous-même ou pour vos clients.
+Vous pouvez distribuer gratuitement le Logiciel, avec ou sans modifications, en code source ou sous forme exécutable, en conservant cette licence et les notices de droits d'auteur. Les versions modifiées doivent être identifiées comme telles et rester soumises aux présentes conditions pour les éléments couverts et leurs adaptations. Vous n'êtes pas obligé de publier vos modifications privées.
+
+3. Infrastructures et prestations autorisées
+Vous pouvez créer, exploiter, livrer et vendre les infrastructures, déploiements, configurations et autres résultats produits avec le Logiciel. Vous pouvez facturer vos prestations de conception, intégration, installation, formation, exploitation, support ou maintenance.
+Ces droits n'autorisent pas la vente du Logiciel lui-même ni la vente d'un accès à celui-ci. Les prestations doivent être réellement distinctes de la fourniture d'une copie, d'une licence ou d'un accès au Logiciel ; les présenter artificiellement comme un service ne permet pas de contourner l'article 4.
+
+4. Commercialisation interdite
+Sans autorisation écrite distincte du titulaire des droits, vous ne pouvez pas :
+- vendre ou revendre une copie, une licence ou une version du Logiciel, originale ou modifiée ;
+- commercialiser une adaptation, un changement de nom, un reconditionnement ou une intégration contenant le Logiciel ou une partie substantielle de celui-ci ;
+- facturer un abonnement, une location, un droit d'entrée ou toute autre contrepartie donnant accès au Logiciel ou à ses fonctionnalités, notamment sous la forme d'un service hébergé, d'une API ou d'une offre SaaS ;
+- rendre l'obtention ou l'utilisation du Logiciel payante par l'intermédiaire d'une offre groupée ou d'une prestation obligatoire qui revient à vendre la copie, la licence ou l'accès.
+L'utilisation interne dans une organisation, y compris par ses salariés et prestataires intervenant pour son compte, demeure autorisée par l'article 2. La facturation d'infrastructures et de prestations réellement distinctes demeure autorisée par l'article 3.
+
+5. Résultats générés
+Le seul fait d'utiliser le Logiciel ne soumet pas à cette licence vos fichiers Compose, scripts de déploiement, architectures, données, applications ou autres résultats générés. Le titulaire vous autorise à utiliser, modifier, distribuer et commercialiser les éléments de configuration et de déploiement qu'il a fournis comme modèles dans le but d'être incorporés à ces résultats.
+Cette exception ne permet pas de redistribuer l'application AutoDocker, Docker Tracer, leur interface d'édition ou leur moteur comme s'il s'agissait d'un simple résultat généré. Les logiciels, images de conteneurs et autres composants tiers utilisés dans les résultats restent soumis à leurs propres conditions.
+
+6. Notices et identité
+Conservez les notices de droits d'auteur et une copie de cette licence lorsque vous redistribuez le Logiciel. N'affirmez pas qu'une version modifiée est la version officielle ou qu'elle est approuvée par le titulaire. Aucun droit sur une marque, un nom ou un logo n'est accordé au-delà de l'identification fidèle de l'origine du Logiciel et de ses notices.
+
+7. Garantie et responsabilité
+Le Logiciel est fourni en l'état, sans garantie contractuelle de disponibilité, de sécurité, d'adéquation à un usage particulier ou d'absence d'erreur. Dans la mesure autorisée par la loi applicable, les titulaires ne répondent pas des dommages résultant de son utilisation. Aucune disposition n'exclut une garantie ou une responsabilité que la loi applicable interdit d'exclure.
+
+8. Non-respect et droits réservés
+Les droits accordés sont conditionnés au respect de cette licence. En cas de violation, ils cessent pour l'auteur de la violation. Ils sont rétablis si la violation est entièrement corrigée dans les trente jours suivant la première notification écrite du titulaire, sauf violations répétées après une telle notification. Les droits acquis par des destinataires qui respectent eux-mêmes la licence ne sont pas supprimés par la violation d'un autre destinataire.
+Tout droit non expressément accordé reste réservé. Une autorisation commerciale distincte ne peut être accordée que par les titulaires des droits concernés.
+
+Cette licence rend le code source accessible mais n'est pas une licence open source approuvée par l'Open Source Initiative, puisqu'elle limite la commercialisation du Logiciel. Elle ne constitue pas une promesse de publication de composants dont le code source n'a pas encore été rendu disponible.

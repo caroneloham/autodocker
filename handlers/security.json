@@ -1,0 +1,22 @@
+{
+  "category": "security",
+  "description": "Traefik + Fail2Ban + Portainer pour securite",
+  "icon": "shield",
+  "name": "Security Stack",
+  "template": {
+    "services": [
+      {
+        "key": "traefik",
+        "network": "dmz"
+      },
+      {
+        "key": "fail2ban",
+        "network": "security"
+      },
+      {
+        "key": "portainer",
+        "network": "admin"
+      }
+    ]
+  }
+}

@@ -1,0 +1,54 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.env
+autodocker.env
+*.secrets.json
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Runtime state and generated files
+data/
+output/
+outputs/
+backups/
+secrets/
+projects/
+audits/
+agents/
+templates_store/
+*.db
+*.sqlite
+*.sqlite3
+*.log
+*.out.log
+*.err.log
+
+# Compiled binaries and local tooling
+*.exe
+*.exe~
+*.test
+*.out
+*.dll
+*.so
+*.dylib
+.idea/
+.vscode/
+__pycache__/
+*.pyc
+
+# Local launch, generated trial bundle and downloadable releases
+.local/
+cmd/trial/ui/tracer/
+cmd/trial/ui/downloads/
+dist/
+build/
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+/autodocker
+/autodocker-trial

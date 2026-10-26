@@ -1,0 +1,29 @@
+{
+  "category": "ai",
+  "description": "Ollama + Open WebUI avec TinyLlama pour tester vite",
+  "icon": "bot",
+  "name": "IA Locale Rapide",
+  "template": {
+    "services": [
+      {
+        "key": "portainer",
+        "network": "back"
+      },
+      {
+        "key": "traefik",
+        "network": "front"
+      },
+      {
+        "extra": {
+          "model": "tinyllama:1.1b-chat-v1-q4_K_M"
+        },
+        "key": "ollama",
+        "network": "back"
+      },
+      {
+        "key": "open-webui",
+        "network": "front"
+      }
+    ]
+  }
+}

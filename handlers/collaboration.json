@@ -1,0 +1,22 @@
+{
+  "category": "collaboration",
+  "description": "Nextcloud + MariaDB + Portainer",
+  "icon": "users",
+  "name": "Suite Collaborative",
+  "template": {
+    "services": [
+      {
+        "key": "nextcloud",
+        "network": "collab"
+      },
+      {
+        "key": "mariadb",
+        "network": "collab"
+      },
+      {
+        "key": "portainer",
+        "network": "admin"
+      }
+    ]
+  }
+}

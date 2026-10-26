@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="csrf-token" content="{{.CSRF}}"><meta name="robots" content="noindex,nofollow">
+  <title>{{if .Management}}Utilisateurs{{else}}Mon compte{{end}} — AutoDocker</title>
+  <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/workspace.css"><link rel="stylesheet" href="/accounts.css">
+  <script src="/accounts.js" defer></script>
+</head>
+<body data-management="{{if .Management}}true{{else}}false{{end}}">
+  <a class="skip-link" href="#account-main">Aller au contenu</a>
+  <header class="app-header account-header">
+    <a class="brand" href="/"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="m16 3 12 7v12l-12 7L4 22V10L16 3Z M4 10l12 7 12-7 M16 17v12" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span>AutoDocker</span></a>
+    <nav class="account-nav" aria-label="Navigation du compte"><a href="/">Créer une infrastructure</a><a href="/compte" {{if not .Management}}aria-current="page"{{end}}>Mon compte</a><a href="/utilisateurs" id="users-navigation" hidden {{if .Management}}aria-current="page"{{end}}>Utilisateurs</a></nav>
+    <div class="account-header-actions"><button type="button" id="account-theme" aria-label="Changer de thème">Mode clair</button><a href="/logout">Déconnexion</a></div>
+  </header>
+  <main id="account-main" class="account-shell">
+    <div class="account-intro"><p class="eyebrow">{{if .Management}}Administration{{else}}Votre espace{{end}}</p><h1>{{if .Management}}Utilisateurs{{else}}Mon compte{{end}}</h1><p>{{if .Management}}Vous créez et gérez les accès. L’inscription publique est fermée.{{else}}Votre adresse e-mail et votre mot de passe, simplement.{{end}}</p></div>
+    <p id="account-global-error" class="account-notice error" role="alert" hidden></p>
+    <p id="account-loading" class="account-loading" role="status">Chargement de votre compte…</p>
+    <div id="account-content" hidden>
+      {{if .Management}}
+      <section class="account-section" aria-labelledby="new-user-title"><div class="account-section-label"><h2 id="new-user-title">Créer un compte</h2><p>Transmettez ensuite l’identifiant et le mot de passe initial à la personne.</p></div>
+        <form id="create-account" class="account-form create-account" method="post">
+          <div class="account-field"><label for="new-username">Identifiant</label><input id="new-username" name="username" minlength="3" maxlength="32" pattern="[a-z0-9][a-z0-9_.\-]{2,31}" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="ex. camille" required><small>3 à 32 caractères, en minuscules.</small></div>
+          <div class="account-field"><label for="initial-password">Mot de passe initial</label><input id="initial-password" name="password" type="password" minlength="8" maxlength="72" autocomplete="new-password" aria-describedby="password-rules" required><small id="password-rules">8 caractères minimum, majuscule, minuscule, chiffre et symbole.</small></div>
+          <button type="submit" class="account-primary">Créer le compte</button><p class="account-form-status" role="status" hidden></p>
+        </form>
+      </section>
+      <section class="account-section account-directory" aria-labelledby="users-title"><div class="account-directory-heading"><h2 id="users-title">Les comptes</h2><span id="users-count"></span></div><p id="users-empty" hidden>Aucun compte à afficher.</p><div class="account-table-scroll"><table><thead><tr><th>Identifiant</th><th>Adresse e-mail</th><th>État</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody id="users-list"></tbody></table></div><p class="account-muted">Désactiver un compte coupe ses accès et ferme ses sessions. Vous pouvez le réactiver à tout moment.</p></section>
+      {{else}}
+      <div class="account-identity"><span>Votre identifiant</span><strong id="account-username"></strong><p>Géré par le propriétaire de la plateforme.</p></div>
+      <div id="owner-setup" hidden>
+        <section class="account-section profile-section" id="local-mfa" aria-labelledby="local-mfa-title" hidden><div class="account-section-label"><h2 id="local-mfa-title">Sécurisez votre accès</h2><p>Avant de configurer l’IA et Docker, activez une vérification à six chiffres. Elle protège les actions administrateur de cette installation.</p></div><div class="account-form"><p>Ouvrez une application d’authentification sur votre téléphone, puis scannez le code.</p><button id="local-mfa-start" type="button" class="account-primary">Afficher mon code QR</button><div id="local-mfa-secret" hidden><img id="local-mfa-qr" width="220" height="220" alt="Code QR pour l’application d’authentification"><p>Clé à saisir manuellement : <code id="local-mfa-manual"></code></p><div class="account-field"><label for="local-mfa-code">Code à six chiffres</label><input id="local-mfa-code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code"></div><button id="local-mfa-verify" type="button" class="account-primary">Activer la protection</button></div><p id="local-mfa-message" class="account-form-status" role="status" hidden></p></div></section>
+        <div id="local-config-controls">
+        <section class="account-section profile-section" aria-labelledby="local-ai-title"><div class="account-section-label"><h2 id="local-ai-title">Votre IA</h2><p>Choisissez le moteur utilisé pour proposer vos infrastructures. Tout se règle ici, sans fichier à modifier.</p></div>
+          <form id="local-setup-form" class="account-form" method="post">
+            <div class="account-field"><label for="local-ai-provider">Moteur IA</label><select id="local-ai-provider"><option value="">Non configuré ici</option><option value="ollama">Ollama sur mon ordinateur</option><option value="vllm">vLLM sur mon ordinateur</option><option value="lmstudio">LM Studio sur mon ordinateur</option><option value="api">Une clé API</option></select></div>
+            <div class="account-field" id="local-ai-url-field" hidden><label for="local-ai-url">Adresse locale</label><input id="local-ai-url" type="url" spellcheck="false" placeholder="http://127.0.0.1:11434"><small>Seulement localhost ou 127.0.0.1. Aucun serveur distant.</small></div>
+            <div class="account-field" id="local-ai-api-field" hidden><label for="local-ai-api-provider">Fournisseur</label><select id="local-ai-api-provider"><option value="gemini">Gemini</option><option value="openrouter">OpenRouter</option></select></div>
+            <div class="account-field" id="local-ai-model-field" hidden><label for="local-ai-model">Modèle</label><input id="local-ai-model" maxlength="180" spellcheck="false" placeholder="Nom du modèle déjà disponible"><small id="local-ai-model-help">Choisissez le modèle chargé dans votre moteur.</small></div>
+            <div class="account-field" id="local-ai-key-field" hidden><label for="local-ai-key">Clé API</label><input id="local-ai-key" type="password" maxlength="4096" autocomplete="off" spellcheck="false" placeholder="Coller la clé API"><small id="local-ai-key-hint">La clé enregistrée ne sera plus affichée.</small><label class="account-inline" id="local-ai-key-remove-field" hidden><input type="checkbox" id="local-ai-key-remove">Supprimer la clé enregistrée</label></div>
+            <div class="account-actions-inline"><button type="button" id="local-ai-test" class="account-secondary">Tester</button><button type="submit" class="account-primary">Enregistrer</button></div><p class="account-form-status" role="status" hidden></p>
+          </form>
+        </section>
+        <section class="account-section profile-section" aria-labelledby="local-docker-title"><div class="account-section-label"><h2 id="local-docker-title">Docker</h2><p>AutoDocker cherche Docker sur cet ordinateur. Si besoin, indiquez son socket ou son pipe local.</p></div><div class="account-form">
+          <p id="local-docker-status" class="account-connection-status" role="status">Recherche de Docker…</p>
+          <div class="account-field"><label for="local-docker-mode">Connexion</label><select id="local-docker-mode"><option value="auto">Détection automatique</option><option value="manual">Connecter manuellement</option></select></div>
+          <div id="local-docker-host-field" class="account-field" hidden><label for="local-docker-host">Socket ou pipe local</label><input id="local-docker-host" spellcheck="false" placeholder="unix:///var/run/docker.sock"><small>Unix : unix:///var/run/docker.sock · Windows : npipe:////./pipe/docker_engine. Les connexions Docker TCP sont refusées.</small></div>
+          <div class="account-actions-inline"><button type="button" id="local-docker-search" class="account-secondary">Rechercher</button><button type="button" id="local-docker-connect" class="account-primary">Connecter</button></div><p id="local-docker-message" class="account-form-status" role="status" hidden></p>
+        </div></section>
+        </div>
+      </div>
+      <section class="account-section profile-section" aria-labelledby="email-title"><div class="account-section-label"><h2 id="email-title">Adresse e-mail</h2><p>Une adresse de contact. Votre identifiant reste le même pour vous connecter.</p></div><form id="update-email" class="account-form" method="post"><div class="account-field"><label for="account-email">Votre adresse e-mail</label><input id="account-email" name="email" type="email" maxlength="254" autocomplete="email" placeholder="vous@exemple.fr"></div><button type="submit" class="account-primary">Enregistrer l’adresse</button><p class="account-form-status" role="status" hidden></p></form></section>
+      <section class="account-section profile-section" aria-labelledby="password-title"><div class="account-section-label"><h2 id="password-title">Mot de passe</h2><p>Choisissez un mot de passe unique. Vos autres sessions seront déconnectées.</p></div><form id="update-password" class="account-form" method="post"><div class="account-field"><label for="current-password">Mot de passe actuel</label><input id="current-password" type="password" autocomplete="current-password" required maxlength="4096"></div><div class="account-field"><label for="new-password">Nouveau mot de passe</label><input id="new-password" type="password" autocomplete="new-password" minlength="8" maxlength="72" aria-describedby="self-password-rules" required><small id="self-password-rules">8 caractères minimum, majuscule, minuscule, chiffre et symbole.</small></div><button type="submit" class="account-primary">Modifier le mot de passe</button><p class="account-form-status" role="status" hidden></p></form></section>
+      {{end}}
+    </div>
+  </main>
+</body></html>

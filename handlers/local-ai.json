@@ -1,0 +1,29 @@
+{
+  "category": "ai",
+  "description": "Ollama + Open WebUI avec modele Mistral leger",
+  "icon": "bot",
+  "name": "IA Locale",
+  "template": {
+    "services": [
+      {
+        "key": "portainer",
+        "network": "back"
+      },
+      {
+        "key": "traefik",
+        "network": "front"
+      },
+      {
+        "extra": {
+          "model": "mistral:7b-instruct-v0.2-q3_K_M"
+        },
+        "key": "ollama",
+        "network": "back"
+      },
+      {
+        "key": "open-webui",
+        "network": "front"
+      }
+    ]
+  }
+}

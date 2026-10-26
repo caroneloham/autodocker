@@ -1,0 +1,26 @@
+{
+  "category": "web",
+  "description": "Linux, Apache (Nginx), MariaDB, PHP (WordPress)",
+  "icon": "web",
+  "name": "LAMP Stack",
+  "template": {
+    "services": [
+      {
+        "key": "nginx",
+        "network": "web"
+      },
+      {
+        "key": "wordpress",
+        "network": "web"
+      },
+      {
+        "key": "mariadb",
+        "network": "db"
+      },
+      {
+        "key": "adminer",
+        "network": "db"
+      }
+    ]
+  }
+}
