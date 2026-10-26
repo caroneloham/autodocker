@@ -787,9 +787,6 @@ func handleListSchedules(c *gin.Context) {
 		var id, retentionCount, enabled int
 		var project, volumeName, cronExpr, lastRun, createdBy, createdAt string
 		rows.Scan(&id, &project, &volumeName, &cronExpr, &retentionCount, &enabled, &lastRun, &createdBy, &createdAt)
-		if !backupProjectAllowed(c, project, false) {
-			continue
-		}
 		schedules = append(schedules, gin.H{
 			"id":              id,
 			"project":         project,
@@ -802,10 +799,17 @@ func handleListSchedules(c *gin.Context) {
 			"created_at":      createdAt,
 		})
 	}
-	if schedules == nil {
-		schedules = []gin.H{}
+	rows.Close()
+	visible := schedules[:0]
+	for _, schedule := range schedules {
+		if backupProjectAllowed(c, schedule["project"].(string), false) {
+			visible = append(visible, schedule)
+		}
 	}
-	c.JSON(http.StatusOK, gin.H{"status": "ok", "schedules": schedules})
+	if visible == nil {
+		visible = []gin.H{}
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "ok", "schedules": visible})
 }
 
 func handleCreateOrUpdateSchedule(c *gin.Context) {

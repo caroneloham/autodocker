@@ -58,6 +58,10 @@ func RegisterScheduledTasksRoutes(api *gin.RouterGroup) {
 // GET /api/scheduled-tasks?project=X
 func handleListScheduledTasks(c *gin.Context) {
 	project := c.Query("project")
+	if project != "" && !localProjectAllowed(c, project, false) {
+		c.JSON(403, gin.H{"error": "Accès refusé à ce projet"})
+		return
+	}
 	query := "SELECT id, project, container_name, task_type, schedule_preset, command, enabled, last_run, next_run, created_by, created_at FROM scheduled_tasks"
 	args := []interface{}{}
 	if project != "" {
@@ -79,23 +83,30 @@ func handleListScheduledTasks(c *gin.Context) {
 		var proj, cname, ttype, preset, cmd, lastRun, nextRun, createdBy, createdAt string
 		if rows.Scan(&id, &proj, &cname, &ttype, &preset, &cmd, &enabled, &lastRun, &nextRun, &createdBy, &createdAt) == nil {
 			tasks = append(tasks, gin.H{
-				"id":             id,
-				"project":        proj,
-				"container_name": cname,
-				"task_type":      ttype,
-				"task_label":     taskTypeLabels[ttype],
+				"id":              id,
+				"project":         proj,
+				"container_name":  cname,
+				"task_type":       ttype,
+				"task_label":      taskTypeLabels[ttype],
 				"schedule_preset": preset,
-				"schedule_label": presetLabels[preset],
-				"command":        cmd,
-				"enabled":        enabled == 1,
-				"last_run":       lastRun,
-				"next_run":       nextRun,
-				"created_by":     createdBy,
-				"created_at":     createdAt,
+				"schedule_label":  presetLabels[preset],
+				"command":         cmd,
+				"enabled":         enabled == 1,
+				"last_run":        lastRun,
+				"next_run":        nextRun,
+				"created_by":      createdBy,
+				"created_at":      createdAt,
 			})
 		}
 	}
-	c.JSON(200, gin.H{"status": "ok", "tasks": tasks})
+	rows.Close()
+	visible := tasks[:0]
+	for _, task := range tasks {
+		if localProjectAllowed(c, task["project"].(string), false) {
+			visible = append(visible, task)
+		}
+	}
+	c.JSON(200, gin.H{"status": "ok", "tasks": visible})
 }
 
 // GET /api/scheduled-tasks/presets
@@ -114,11 +125,11 @@ func handleGetPresets(c *gin.Context) {
 // POST /api/scheduled-tasks
 func handleCreateScheduledTask(c *gin.Context) {
 	var req struct {
-		Project       string `json:"project"`
-		ContainerName string `json:"container_name"`
-		TaskType      string `json:"task_type"`
+		Project        string `json:"project"`
+		ContainerName  string `json:"container_name"`
+		TaskType       string `json:"task_type"`
 		SchedulePreset string `json:"schedule_preset"`
-		Command       string `json:"command"`
+		Command        string `json:"command"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, gin.H{"error": "Donnees invalides"})
@@ -166,7 +177,9 @@ func handleToggleScheduledTask(c *gin.Context) {
 		return
 	}
 	val := 0
-	if *req.Enabled { val = 1 }
+	if *req.Enabled {
+		val = 1
+	}
 	_, err := db.DB.Exec("UPDATE scheduled_tasks SET enabled = ? WHERE id = ?", val, id)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
@@ -188,21 +201,29 @@ func handleDeleteScheduledTask(c *gin.Context) {
 func CheckScheduledTasks() {
 	now := time.Now()
 	rows, err := db.DB.Query("SELECT id, project, container_name, task_type, custom_cron, command FROM scheduled_tasks WHERE enabled = 1")
-	if err != nil { return }
+	if err != nil {
+		return
+	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var id int
 		var project, containerName, taskType, cronExpr, command string
-		if rows.Scan(&id, &project, &containerName, &taskType, &cronExpr, &command) != nil { continue }
+		if rows.Scan(&id, &project, &containerName, &taskType, &cronExpr, &command) != nil {
+			continue
+		}
 
-		if !CronMatches(cronExpr, now) { continue }
+		if !CronMatches(cronExpr, now) {
+			continue
+		}
 
 		// Check if already run this minute
 		minuteKey := now.Format("2006-01-02 15:04")
 		var lastRun string
 		db.DB.QueryRow("SELECT last_run FROM scheduled_tasks WHERE id = ?", id).Scan(&lastRun)
-		if strings.HasPrefix(lastRun, minuteKey) { continue }
+		if strings.HasPrefix(lastRun, minuteKey) {
+			continue
+		}
 
 		// Execute task
 		go executeScheduledTask(id, project, containerName, taskType, command)
@@ -214,7 +235,9 @@ func executeScheduledTask(id int, project, containerName, taskType, command stri
 	db.DB.Exec("UPDATE scheduled_tasks SET last_run = ? WHERE id = ?", now, id)
 
 	cli := services.EnsureDocker()
-	if cli == nil { return }
+	if cli == nil {
+		return
+	}
 
 	// Find container by name
 	fullName := containerName
@@ -233,7 +256,9 @@ func executeScheduledTask(id int, project, containerName, taskType, command stri
 	case "backup_db":
 		// Detect DB type from container image
 		info, ierr := cli.ContainerInspect(ctx, fullName)
-		if ierr != nil { return }
+		if ierr != nil {
+			return
+		}
 		image := strings.ToLower(info.Config.Image)
 		var cmd []string
 		if strings.Contains(image, "mariadb") || strings.Contains(image, "mysql") {
@@ -269,7 +294,9 @@ func execCmd(ctx context.Context, container string, cmd []string) {
 // CronMatches checks if a cron expression matches the given time (exported for reuse).
 func CronMatches(cronExpr string, t time.Time) bool {
 	fields := strings.Fields(cronExpr)
-	if len(fields) != 5 { return false }
+	if len(fields) != 5 {
+		return false
+	}
 	return fieldMatches(fields[0], t.Minute()) &&
 		fieldMatches(fields[1], t.Hour()) &&
 		fieldMatches(fields[2], t.Day()) &&
@@ -278,11 +305,15 @@ func CronMatches(cronExpr string, t time.Time) bool {
 }
 
 func fieldMatches(field string, value int) bool {
-	if field == "*" { return true }
+	if field == "*" {
+		return true
+	}
 	// Handle */N
 	if strings.HasPrefix(field, "*/") {
 		n, err := strconv.Atoi(field[2:])
-		if err != nil || n <= 0 { return false }
+		if err != nil || n <= 0 {
+			return false
+		}
 		return value%n == 0
 	}
 	// Handle comma-separated
@@ -292,10 +323,14 @@ func fieldMatches(field string, value int) bool {
 			bounds := strings.SplitN(part, "-", 2)
 			lo, _ := strconv.Atoi(bounds[0])
 			hi, _ := strconv.Atoi(bounds[1])
-			if value >= lo && value <= hi { return true }
+			if value >= lo && value <= hi {
+				return true
+			}
 		} else {
 			n, err := strconv.Atoi(part)
-			if err == nil && n == value { return true }
+			if err == nil && n == value {
+				return true
+			}
 		}
 	}
 	return false

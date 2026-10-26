@@ -25,6 +25,10 @@ func RegisterSecretsRoutes(api *gin.RouterGroup) {
 // GET /api/secrets/:project — list secrets (values masked)
 func handleListSecrets(c *gin.Context) {
 	project := c.Param("project")
+	if !isSafeProjectName(project) || !localProjectAllowed(c, project, false) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Accès refusé à ce projet"})
+		return
+	}
 	rows, err := db.DB.Query("SELECT id, key_name, created_by, created_at FROM secrets WHERE project = ? ORDER BY key_name", project)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

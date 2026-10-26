@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"autodocker-go/config"
@@ -53,6 +54,49 @@ func TestDirectReadProjectGrantRemainsReadable(t *testing.T) {
 	}
 	if got := getUserRoleOnProject("mine", "alice"); got != "read" {
 		t.Fatalf("direct read grant became %q", got)
+	}
+}
+
+func TestProjectMetadataListsRespectReadGrants(t *testing.T) {
+	r, client := accountTestRouter(t)
+	_, err := db.DB.Exec(`
+		CREATE TABLE labs_acl(project TEXT, username TEXT, role TEXT);
+		CREATE TABLE labs(project TEXT, owner TEXT);
+		CREATE TABLE groups_acl(group_name TEXT, project TEXT, role TEXT);
+		CREATE TABLE user_groups(group_name TEXT, username TEXT);
+		CREATE TABLE secrets(id INTEGER PRIMARY KEY,project TEXT,key_name TEXT,created_by TEXT,created_at TEXT);
+		CREATE TABLE scheduled_tasks(id INTEGER PRIMARY KEY,project TEXT,container_name TEXT,task_type TEXT,schedule_preset TEXT,command TEXT,enabled INTEGER,last_run TEXT,next_run TEXT,created_by TEXT,created_at TEXT);
+		CREATE TABLE backup_schedules(id INTEGER PRIMARY KEY,project TEXT,volume_name TEXT,cron_expr TEXT,retention_count INTEGER,enabled INTEGER,last_run TEXT,created_by TEXT,created_at TEXT);
+		INSERT INTO labs(project,owner) VALUES('mine','alice'),('other','bob');
+		INSERT INTO secrets(project,key_name,created_by,created_at) VALUES('mine','MY_KEY','alice','today'),('other','OTHER_KEY','bob','today');
+		INSERT INTO scheduled_tasks(project,container_name,task_type,schedule_preset,command,enabled,last_run,next_run,created_by,created_at) VALUES
+		('mine','web','custom_command','every_hour','my-command',1,'','','alice','today'),
+		('other','db','custom_command','every_hour','other-command',1,'','','bob','today');
+		INSERT INTO backup_schedules(project,volume_name,cron_expr,retention_count,enabled,last_run,created_by,created_at) VALUES
+		('mine','mine_data','0 2 * * *',5,1,'','alice','today'),
+		('other','other_data','0 2 * * *',5,1,'','bob','today');
+	`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	api := r.Group("/api", middleware.LoginRequired())
+	RegisterSecretsRoutes(api)
+	RegisterScheduledTasksRoutes(api)
+	RegisterBackupRoutes(api)
+	alice := client("alice")
+	if response := alice.request(http.MethodGet, "/api/secrets/other", ""); response.Code != http.StatusForbidden {
+		t.Fatalf("other secret names exposed: %d", response.Code)
+	}
+	if response := alice.request(http.MethodGet, "/api/secrets/mine", ""); response.Code != http.StatusOK {
+		t.Fatalf("own secret names denied: %d", response.Code)
+	}
+	response := alice.request(http.MethodGet, "/api/scheduled-tasks", "")
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "my-command") || strings.Contains(response.Body.String(), "other-command") {
+		t.Fatalf("scheduled command list crossed project boundary: %d %s", response.Code, response.Body.String())
+	}
+	response = alice.request(http.MethodGet, "/api/backups/schedules", "")
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "mine_data") || strings.Contains(response.Body.String(), "other_data") {
+		t.Fatalf("backup schedule list crossed project boundary: %d %s", response.Code, response.Body.String())
 	}
 }
 
