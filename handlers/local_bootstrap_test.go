@@ -38,8 +38,8 @@ func TestLocalBootstrapRequiresLoopbackAndCSRF(t *testing.T) {
 		t.Fatal(err)
 	}
 	r := gin.New()
-	r.SetHTMLTemplate(template.Must(template.New("setup.html").Parse("csrf:{{.CSRF}} {{.Error}}")))
-	r.Use(sessions.Sessions("session", cookie.NewStore([]byte("bootstrap-signing-key-32-bytes-long"))))
+	r.SetHTMLTemplate(template.Must(template.New("setup.html").Parse("{{if .LaunchRequired}}Rouvrez AutoDocker depuis son lanceur{{else}}csrf:{{.CSRF}} {{.Error}}{{end}}")))
+	r.Use(sessions.Sessions(config.SessionCookieName(), cookie.NewStore([]byte("bootstrap-signing-key-32-bytes-long"))))
 	r.Use(middleware.LocalHostOriginProtection())
 	r.Use(middleware.SessionRecovery())
 	r.Use(middleware.LiveAccountSession())
@@ -72,6 +72,8 @@ func TestLocalBootstrapRequiresLoopbackAndCSRF(t *testing.T) {
 	}
 	if response := request("GET", "/setup", nil, nil, false); response.Code != http.StatusForbidden {
 		t.Fatalf("setup without token exposed: %d", response.Code)
+	} else if !strings.Contains(response.Body.String(), "Rouvrez AutoDocker") || response.Header().Get("Cache-Control") != "no-store" {
+		t.Fatal("missing first-launch grant did not show private recovery guidance")
 	}
 	if response := request("GET", "/setup?token="+strings.Repeat("b", 64), nil, nil, false); response.Code != http.StatusForbidden {
 		t.Fatalf("setup with wrong token exposed: %d", response.Code)

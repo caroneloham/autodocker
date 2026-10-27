@@ -325,7 +325,7 @@ func main() {
 		SameSite: http.SameSiteLaxMode,
 		Secure:   !config.NoSSL, // match actual protocol: Secure=true for HTTPS, false for HTTP
 	})
-	r.Use(sessions.Sessions("session", store))
+	r.Use(sessions.Sessions(config.SessionCookieName(), store))
 	r.Use(middleware.LocalHostOriginProtection())
 
 	// Session recovery: detect corrupted/invalid cookies early and clear them
