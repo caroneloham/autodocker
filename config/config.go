@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 var (
@@ -27,6 +28,19 @@ var (
 	AuthBypassRole string
 	GeneratorOnly  bool
 )
+
+// Browsers share cookies between localhost ports. Separate local installations
+// must not overwrite each other's owner-setup grants or authenticated sessions.
+func SessionCookieName() string {
+	if !LocalBootstrapMode() {
+		return "session"
+	}
+	port, err := strconv.Atoi(Port)
+	if err == nil && port > 0 && port <= 65535 {
+		return "autodocker_local_" + strconv.Itoa(port)
+	}
+	return "autodocker_local"
+}
 
 func Init() {
 	exe, _ := os.Executable()

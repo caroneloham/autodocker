@@ -16,7 +16,8 @@ import (
 func SessionRecovery() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		cookieHeader := c.GetHeader("Cookie")
-		if !strings.Contains(cookieHeader, "session=") {
+		cookieName := config.SessionCookieName()
+		if !strings.Contains(cookieHeader, cookieName+"=") {
 			c.Next()
 			return
 		}
@@ -31,7 +32,7 @@ func SessionRecovery() gin.HandlerFunc {
 			session.Options(sessions.Options{MaxAge: -1, Path: "/"})
 			if err := session.Save(); err != nil {
 				http.SetCookie(c.Writer, &http.Cookie{
-					Name: "session", Value: "", Path: "/",
+					Name: cookieName, Value: "", Path: "/",
 					MaxAge: -1, HttpOnly: true,
 				})
 			}

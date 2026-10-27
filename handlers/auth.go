@@ -321,7 +321,7 @@ func handleLoginPage(c *gin.Context) {
 		if bootstrapGrant(c) {
 			c.Redirect(http.StatusSeeOther, "/setup")
 		} else {
-			c.String(http.StatusForbidden, "Premiere ouverture : utilisez le navigateur lance par AutoDocker.")
+			showLocalLauncherHelp(c)
 		}
 		return
 	}
@@ -338,7 +338,7 @@ func handleLoginPost(c *gin.Context) {
 		if bootstrapGrant(c) {
 			c.Redirect(http.StatusSeeOther, "/setup")
 		} else {
-			c.Status(http.StatusForbidden)
+			showLocalLauncherHelp(c)
 		}
 		return
 	}

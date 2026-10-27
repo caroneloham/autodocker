@@ -69,6 +69,12 @@ func localBootstrapRequest(c *gin.Context) bool {
 	return c.GetHeader("Forwarded") == "" && c.GetHeader("X-Forwarded-For") == "" && c.GetHeader("X-Real-IP") == ""
 }
 
+func showLocalLauncherHelp(c *gin.Context) {
+	c.Header("Cache-Control", "no-store")
+	c.Header("Referrer-Policy", "no-referrer")
+	c.HTML(http.StatusForbidden, "setup.html", gin.H{"LaunchRequired": true})
+}
+
 func registerLocalBootstrapRoutes(r *gin.Engine) {
 	r.GET("/setup", func(c *gin.Context) {
 		if !localBootstrapRequest(c) {
@@ -83,7 +89,7 @@ func registerLocalBootstrapRoutes(r *gin.Engine) {
 		}
 		if token := c.Query("token"); token != "" {
 			if !validBootstrapToken(token) || subtle.ConstantTimeCompare([]byte(token), []byte(os.Getenv("AUTODOCKER_BOOTSTRAP_TOKEN"))) != 1 {
-				c.Status(http.StatusForbidden)
+				showLocalLauncherHelp(c)
 				return
 			}
 			digest := sha256.Sum256([]byte(token))
@@ -101,7 +107,7 @@ func registerLocalBootstrapRoutes(r *gin.Engine) {
 			return
 		}
 		if !bootstrapGrant(c) {
-			c.Status(http.StatusForbidden)
+			showLocalLauncherHelp(c)
 			return
 		}
 		c.HTML(http.StatusOK, "setup.html", gin.H{"CSRF": middleware.GenerateCSRFToken(c), "Error": ""})
@@ -116,7 +122,7 @@ func registerLocalBootstrapRoutes(r *gin.Engine) {
 			return
 		}
 		if !bootstrapGrant(c) {
-			c.Status(http.StatusForbidden)
+			showLocalLauncherHelp(c)
 			return
 		}
 		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 4096)
