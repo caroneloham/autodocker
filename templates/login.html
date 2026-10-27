@@ -1,20 +1,19 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
   <title>Connexion - AutoDocker</title>
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/autodocker-logo.png" type="image/png">
   <script>
-    (function(){var theme='dark';try{if(localStorage.getItem('autodocker:theme')==='light')theme='light';}catch{}document.documentElement.dataset.theme=theme;})();
+    (function(){var theme='light';try{if(localStorage.getItem('autodocker:theme')==='dark')theme='dark';}catch{}document.documentElement.dataset.theme=theme;})();
   </script>
   <link rel="stylesheet" href="/workspace.css">
   <style>
     body { min-height:100svh;display:grid;place-items:center;padding:32px 20px; }
     .login-shell { width:min(100%,420px);padding:0; }
     .login-shell .brand { margin-bottom:40px; }
-    .login-shell .brand svg { width:32px;height:32px;color:var(--blue-light); }
     .login-shell h1 { margin-bottom:28px;font-size:28px;letter-spacing:-.8px; }
     .login-form { display:grid;gap:20px; }
     .login-field label { display:block;margin-bottom:8px;font-size:14px;font-weight:500; }
@@ -25,7 +24,7 @@
 </head>
 <body>
   <main class="login-shell">
-    <a class="brand" href="/" aria-label="AutoDocker, accueil"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="m16 3 12 7v12l-12 7L4 22V10L16 3Z M4 10l12 7 12-7 M16 17v12 M10 6.5l12 7v5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span>AutoDocker</span></a>
+    <a class="brand" href="/" aria-label="AutoDocker, accueil"><span class="autodocker-logo" aria-hidden="true"><img src="/autodocker-logo.png" alt="" draggable="false"></span><span>AutoDocker</span></a>
     <h1>Connexion</h1>
     {{if .Error}}<p class="error-box" role="alert">{{.Error}}</p>{{end}}
     <form class="login-form" method="post" action="/login">

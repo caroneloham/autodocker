@@ -360,6 +360,7 @@ func main() {
 	serveUIAsset(r, "/styles.css", "styles.css")
 	serveUIAsset(r, "/workspace.css", "workspace.css")
 	serveUIAsset(r, "/favicon.svg", "favicon.svg")
+	serveUIAsset(r, "/autodocker-logo.png", "autodocker-logo.png")
 	serveUIAsset(r, "/app.js", "app.js")
 	serveUIAsset(r, "/i18n.js", "i18n.js")
 	serveUIAsset(r, "/accounts.js", "accounts.js")

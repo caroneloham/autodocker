@@ -4,7 +4,7 @@
   const management=document.body.dataset.management==='true';
   const token=document.querySelector('meta[name="csrf-token"]')?.content || '';
   let savedLocalSetup={provider:'',base_url:'',model:'',api_provider:'gemini',docker_host:'auto',has_api_key:false};
-  let theme='dark';try{theme=localStorage.getItem('autodocker:theme')==='light'?'light':'dark';}catch{}
+  let theme='light';try{if(localStorage.getItem('autodocker:theme')==='dark')theme='dark';}catch{}
   const applyTheme=()=>{document.documentElement.dataset.theme=theme;$('account-theme').textContent=theme==='dark'?'Mode clair':'Mode sombre';};
   applyTheme();$('account-theme').addEventListener('click',()=>{theme=theme==='dark'?'light':'dark';applyTheme();try{localStorage.setItem('autodocker:theme',theme);}catch{}});
 
