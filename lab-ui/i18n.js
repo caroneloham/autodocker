@@ -1,5 +1,5 @@
 /**
- * i18n.js — Traductions francaises pour AutoDocker.
+ * i18n.js - Traductions francaises pour AutoDocker.
  * Francais uniquement. La fonction t("key") retourne le texte FR ou la cle si absente.
  */
 
@@ -489,10 +489,10 @@ function t(key) {
   return FR[key] || key;
 }
 
-/** No-op — plus de data-i18n a traiter, le texte est en dur dans le HTML. */
+/** No-op - plus de data-i18n a traiter, le texte est en dur dans le HTML. */
 function applyI18n() {}
 
-/** No-op — plus de multilingue. */
+/** No-op - plus de multilingue. */
 function setLang() {}
 function initLangDropdown() {}
 

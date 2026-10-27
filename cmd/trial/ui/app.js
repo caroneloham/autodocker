@@ -499,7 +499,7 @@ function runtimeModelPresentation(reference){
 function modelFileLabel(filename){
  const quant=filename.match(/(?:^|[-_.])((?:I?Q\d)[A-Z0-9_]*|BF16|F16)(?=[-.]|$)/i)?.[1]?.toUpperCase();
  const label=quant==='Q4_K_M'?'Équilibrée':quant==='Q8_0'||quant==='F16'||quant==='BF16'?'Précision plus élevée':quant&&/^(I?Q[23])/.test(quant)?'Plus compacte':'Version';
- return quant?label+' · '+quant+' — '+filename:filename;
+ return quant?label+' · '+quant+' - '+filename:filename;
 }
 
 // Compatibility for existing local API checks.
@@ -561,7 +561,7 @@ function initInfrastructureApp() {
       if (view === name) step.setAttribute('aria-current', 'step'); else step.removeAttribute('aria-current');
       step.classList.toggle('complete', index < ['choose', 'review', 'done'].indexOf(name));
     });
-    document.title = 'AutoDocker — ' + ({choose:'Créer une infrastructure', review:'Vérifier mon infrastructure', done:'Infrastructure prête'})[name];
+    document.title = 'AutoDocker - ' + ({choose:'Créer une infrastructure', review:'Vérifier mon infrastructure', done:'Infrastructure prête'})[name];
     window.scrollTo({ top: 0, behavior: 'instant' });
     const heading = $(name + '-title'); heading.tabIndex = -1; heading.focus({ preventScroll: true });
   }
