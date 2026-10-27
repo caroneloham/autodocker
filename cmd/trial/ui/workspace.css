@@ -661,7 +661,7 @@ body.model-picker-open{overflow:hidden}
  .hf-repository-heading{display:block}#hf-back{margin-top:10px}.hf-result-action{font-size:0}.hf-result-action::after{content:'→';font-size:18px}.model-picker-dialog .hf-search-line{flex-wrap:nowrap}.model-picker-dialog .hf-search-line input{flex-basis:auto}.model-picker-dialog .hf-search-line .button{width:auto;min-height:44px;padding:9px}
 }
 
-/* Shared theme tokens. Dark is the initial appearance. */
+/* Shared theme tokens. Pages start light and preserve an explicit dark preference. */
 :root {
   --ad-tone-02050aaa: #02050aaa;
   --ad-tone-050a1255: #050a1255;
@@ -1098,10 +1098,11 @@ body.model-picker-open{overflow:hidden}
 
 .ai-design-review,.ai-manual-steps{border-top:1px solid var(--line);padding-top:20px;margin-top:22px}.ai-design-review[hidden],.ai-manual-steps[hidden]{display:none}.ai-design-review h4,.ai-manual-steps h4{font-size:17px;margin:0 0 14px}.ai-design-review ul{padding:0;list-style:none;display:grid;gap:14px}.ai-design-review li{border-left:2px solid var(--blue);padding-left:14px}.ai-design-review strong,.ai-design-review li span{display:block;font-size:15px}.ai-design-review li span,.ai-design-review p,.ai-manual-steps li{color:var(--secondary);font-size:14px;line-height:1.7}.ai-design-review p{margin-top:16px}.ai-manual-steps ul{padding-left:20px}.ai-manual-steps li+li{margin-top:8px}
 
+/* AutoDocker identity, shared by local and hosted pages. */
 .autodocker-logo { position:relative;display:inline-block;width:52px;height:52px;overflow:hidden;flex:0 0 auto; }
 .autodocker-logo img { position:absolute;width:160%;max-width:none;height:auto;left:-26.4%;top:-41.1%; }
 .account-brand { display:inline-flex;align-items:center;gap:10px; }
 .account-brand .autodocker-logo { width:42px;height:42px; }
-@media(min-width:1200px) { .app-header { grid-template-columns:minmax(210px,1fr) auto auto;gap:22px; } .header-right { gap:18px; } .header-right>.quiet-link { white-space:nowrap; } }
-@media(min-width:681px) and (max-width:1199px) { .app-header { grid-template-columns:1fr auto;padding-top:20px; } .steps { grid-column:1/-1;order:3;justify-content:center;padding-bottom:17px; } .header-right>.quiet-link { white-space:nowrap; } }
-@media(max-width:680px) { .brand .autodocker-logo { width:44px;height:44px; } }
+@media(min-width:1200px) { .app-header:not(.account-header) { grid-template-columns:minmax(210px,1fr) auto auto;gap:22px; } .header-right { gap:18px; } .header-right>.quiet-link { white-space:nowrap; } }
+@media(min-width:681px) and (max-width:1199px) { .app-header:not(.account-header) { grid-template-columns:1fr auto;padding-top:20px; } .steps { grid-column:1/-1;order:3;justify-content:center;padding-bottom:17px; } .header-right>.quiet-link { white-space:nowrap; } }
+@media(max-width:680px) { .brand .autodocker-logo { width:44px;height:44px; } .header-right { grid-column:1/-1;order:2;width:100%;justify-content:space-between;flex-wrap:wrap; } .steps { order:3; } }

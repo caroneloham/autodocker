@@ -523,7 +523,7 @@ function initInfrastructureApp() {
     field.setAttribute('autocomplete','off');
   });
   function applyTheme(theme){
-    const light=theme==='light';document.documentElement.dataset.theme=light?'light':'dark';
+    const light=theme!=='dark';document.documentElement.dataset.theme=light?'light':'dark';
     const label=light?'Passer en mode sombre':'Passer en mode clair';
     $('theme-toggle').setAttribute('aria-label',label);$('theme-toggle').setAttribute('title',label);$('theme-toggle').setAttribute('aria-pressed',String(light));$('theme-label').textContent=light?'Mode sombre':'Mode clair';
   }

@@ -166,7 +166,7 @@ func main() {
 	})
 	router.GET("/essai", func(c *gin.Context) { c.Redirect(http.StatusTemporaryRedirect, "/essai/") })
 	router.GET("/essai/", func(c *gin.Context) { c.File(filepath.Join(assets, "index.html")) })
-	for _, name := range []string{"app.js", "workspace.css", "favicon.svg"} {
+	for _, name := range []string{"app.js", "workspace.css", "favicon.svg", "autodocker-logo.png"} {
 		name := name
 		router.GET("/essai/"+name, func(c *gin.Context) { c.File(filepath.Join(assets, name)) })
 	}

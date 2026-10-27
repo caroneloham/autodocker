@@ -1,18 +1,19 @@
 <!doctype html>
-<html lang="fr" data-theme="dark">
+<html lang="fr" data-theme="light">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="csrf-token" content="{{.CSRF}}"><meta name="robots" content="noindex,nofollow">
   <title>{{if .Management}}Utilisateurs{{else}}Mon compte{{end}} - AutoDocker</title>
-  <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/workspace.css"><link rel="stylesheet" href="/accounts.css">
+  <script>(function(){var theme='light';try{if(localStorage.getItem('autodocker:theme')==='dark')theme='dark';}catch{}document.documentElement.dataset.theme=theme;})();</script>
+  <link rel="icon" href="/autodocker-logo.png" type="image/png"><link rel="stylesheet" href="/workspace.css"><link rel="stylesheet" href="/accounts.css">
   <script src="/accounts.js" defer></script>
 </head>
 <body data-management="{{if .Management}}true{{else}}false{{end}}">
   <a class="skip-link" href="#account-main">Aller au contenu</a>
   <header class="app-header account-header">
-    <a class="brand" href="/"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="m16 3 12 7v12l-12 7L4 22V10L16 3Z M4 10l12 7 12-7 M16 17v12" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span>AutoDocker</span></a>
+    <a class="brand" href="/"><span class="autodocker-logo" aria-hidden="true"><img src="/autodocker-logo.png" alt="" draggable="false"></span><span>AutoDocker</span></a>
     <nav class="account-nav" aria-label="Navigation du compte"><a href="/">Créer une infrastructure</a><a href="/compte" {{if not .Management}}aria-current="page"{{end}}>Mon compte</a><a href="/utilisateurs" id="users-navigation" hidden {{if .Management}}aria-current="page"{{end}}>Utilisateurs</a></nav>
-    <div class="account-header-actions"><button type="button" id="account-theme" aria-label="Changer de thème">Mode clair</button><a href="/logout">Déconnexion</a></div>
+    <div class="account-header-actions"><button type="button" id="account-theme" aria-label="Changer de thème">Mode sombre</button><a href="/logout">Déconnexion</a></div>
   </header>
   <main id="account-main" class="account-shell">
     <div class="account-intro"><p class="eyebrow">{{if .Management}}Administration{{else}}Votre espace{{end}}</p><h1>{{if .Management}}Utilisateurs{{else}}Mon compte{{end}}</h1><p>{{if .Management}}Vous créez et gérez les accès. L’inscription publique est fermée.{{else}}Votre adresse e-mail et votre mot de passe, simplement.{{end}}</p></div>

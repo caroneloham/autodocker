@@ -12,10 +12,7 @@ source = root
 assets = source / 'cmd' / 'trial' / 'ui'
 assets.mkdir(parents=True, exist_ok=True)
 tracer_build = args.tracer_dir.resolve() / 'dist-browser'
-logo_assets = list((tracer_build / 'assets').glob('autodocker-logo-*.png'))
-if len(logo_assets) != 1:
-    raise SystemExit('Build Docker Tracer browser assets with the AutoDocker logo first')
-logo_href = '/essai/tracer/assets/' + logo_assets[0].name
+logo_href = '/essai/autodocker-logo.png'
 logo_markup = f'<span class="autodocker-logo" aria-hidden="true"><img src="{logo_href}" alt="" draggable="false"></span>'
 
 def replace_once(source, before, after):
@@ -29,11 +26,8 @@ html = html.replace('href="/workspace.css"', 'href="/essai/workspace.css"')
 html = html.replace('src="/app.js"', 'src="/essai/app.js"')
 html = replace_once(html, '<script src="/essai/app.js" defer></script>', '<script src="/essai/app.js" defer></script><script src="/essai/compte/account.js" defer></script>')
 html = html.replace('href="/" aria-label="AutoDocker, accueil"', 'href="/essai/" aria-label="AutoDocker, essai"')
-brand_icon = re.search(r'(?<=aria-label="AutoDocker, essai">)<svg.*?</svg>', html)
-if not brand_icon:
-    raise ValueError('AutoDocker brand icon not found')
-html = replace_once(html, brand_icon.group(), logo_markup)
-html = html.replace('<link rel="icon" href="/essai/favicon.svg" type="image/svg+xml">', f'<link rel="icon" href="{logo_href}" type="image/png">')
+html = html.replace('src="/autodocker-logo.png"', f'src="{logo_href}"')
+html = html.replace('href="/autodocker-logo.png"', f'href="{logo_href}"')
 html = html.replace('<span class="local-label">Sur votre ordinateur</span>', '<span class="local-label">Essai public</span>')
 html = html.replace('<a href="/compte" class="quiet-link">Mon compte</a><a href="/logout" class="quiet-link">Déconnexion</a>', '<button id="trial-account-open" type="button" class="quiet-link trial-account-trigger">Connexion / inscription</button><a href="/essai/tracer/" class="quiet-link">Docker Tracer</a>')
 html = replace_once(html, '<footer><span>AutoDocker</span><span>Votre infrastructure, sur votre ordinateur.</span></footer>', '<footer><span>AutoDocker</span><span>Votre infrastructure, sur votre ordinateur.</span><span class="trial-local-downloads"><a class="trial-local-download" href="https://github.com/caroneloham/autodocker" target="_blank" rel="noopener noreferrer">Télécharger sur GitHub ↗</a></span></footer>')
@@ -123,15 +117,6 @@ css = replace_once(css, '.ai-panel > label { margin-top: 28px; font-size: 14px; 
 .trial-account-dialog .account-privacy { margin:18px 0 0;padding-top:16px;border-top:1px solid var(--line-soft);color:var(--muted);font-size:12px;line-height:1.55; }
 .trial-account-dialog .account-privacy a { color:var(--blue-light); }
 @media(max-width:680px) { .trial-signup { align-items:stretch;flex-direction:column;padding:20px; } .trial-signup-actions .button { width:100%;white-space:normal; } .trial-account-dialog { width:calc(100vw - 24px);padding:20px;max-height:calc(100dvh - 24px); } .header-right { grid-column:1/-1;order:2;width:100%;justify-content:space-between;flex-wrap:wrap; } .header-right>a:last-child { margin-left:auto; } .steps { order:3; } }''')
-css += '''
-.autodocker-logo { position:relative;display:inline-block;width:52px;height:52px;overflow:hidden;flex:0 0 auto; }
-.autodocker-logo img { position:absolute;width:160%;max-width:none;height:auto;left:-26.4%;top:-41.1%; }
-.account-brand { display:inline-flex;align-items:center;gap:10px; }
-.account-brand .autodocker-logo { width:42px;height:42px; }
-@media(min-width:1200px) { .app-header { grid-template-columns:minmax(210px,1fr) auto auto;gap:22px; } .header-right { gap:18px; } .header-right>.quiet-link { white-space:nowrap; } }
-@media(min-width:681px) and (max-width:1199px) { .app-header { grid-template-columns:1fr auto;padding-top:20px; } .steps { grid-column:1/-1;order:3;justify-content:center;padding-bottom:17px; } .header-right>.quiet-link { white-space:nowrap; } }
-@media(max-width:680px) { .brand .autodocker-logo { width:44px;height:44px; } }
-'''
 (assets / 'workspace.css').write_text(css, encoding='utf-8')
 account_path = assets / 'compte' / 'index.html'
 account_html = account_path.read_text(encoding='utf-8')
@@ -141,6 +126,7 @@ if account_brands != 1:
 account_html = re.sub(r'<link rel="icon"[^>]*>', f'<link rel="icon" href="{logo_href}" type="image/png">', account_html, count=1)
 account_path.write_text(account_html, encoding='utf-8')
 shutil.copyfile(source / 'lab-ui' / 'favicon.svg', assets / 'favicon.svg')
+shutil.copyfile(source / 'lab-ui' / 'autodocker-logo.png', assets / 'autodocker-logo.png')
 tracer = assets / 'tracer'
 tracer.mkdir(exist_ok=True)
 (tracer / 'compose-viewer.bundle.js').unlink(missing_ok=True)
