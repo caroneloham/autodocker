@@ -30,7 +30,7 @@ html = html.replace('src="/autodocker-logo.png"', f'src="{logo_href}"')
 html = html.replace('href="/autodocker-logo.png"', f'href="{logo_href}"')
 html = html.replace('<span class="local-label">Sur votre ordinateur</span>', '<span class="local-label">Essai public</span>')
 html = html.replace('<a href="/compte" class="quiet-link">Mon compte</a><a href="/logout" class="quiet-link">Déconnexion</a>', '<button id="trial-account-open" type="button" class="quiet-link trial-account-trigger">Connexion / inscription</button><a href="/essai/tracer/" class="quiet-link">Docker Tracer</a>')
-html = replace_once(html, '<footer><span>AutoDocker</span><span>Votre infrastructure, sur votre ordinateur.</span></footer>', '<footer><span>AutoDocker</span><span>Votre infrastructure, sur votre ordinateur.</span><span class="trial-local-downloads"><a class="trial-local-download" href="https://github.com/caroneloham/autodocker" target="_blank" rel="noopener noreferrer">Télécharger sur GitHub ↗</a></span></footer>')
+html = replace_once(html, '<footer><span>AutoDocker</span><span>Votre infrastructure, sur votre ordinateur.</span></footer>', '<footer class="app-footer"><span>AutoDocker</span><span>Votre infrastructure, sur votre ordinateur.</span><span class="trial-local-downloads"><a class="trial-local-download" href="https://github.com/caroneloham/autodocker" target="_blank" rel="noopener noreferrer">Télécharger sur GitHub ↗</a></span><p class="site-thanks">Merci à <a href="https://inge-plus.fr/avr-2026-bourses-ia-bac3-ingeplus-accompagne-les-talents-de-bts-vers-les-metiers-de-lia/" target="_blank" rel="noopener noreferrer">IngéPLUS</a> pour son soutien et son accompagnement.</p></footer>')
 html = replace_once(html, '<section id="ai-panel" class="ai-panel" hidden aria-label="Créer une infrastructure avec un prompt">', '<section id="ai-panel" class="ai-panel" hidden aria-label="Créer une infrastructure avec un prompt"><p id="trial-quota-info" class="option-note">Gratuit · 2 demandes IA par jour sans compte. Un cookie nécessaire limite les abus.</p>')
 html = replace_once(html, 'id="infra-prompt" rows="3" maxlength="8000" aria-describedby="ai-progress"', 'id="infra-prompt" rows="3" aria-describedby="ai-progress trial-prompt-count"')
 html = replace_once(html, '</textarea><div class="prompt-examples"', '</textarea><p id="trial-prompt-count" class="trial-prompt-count" aria-live="polite">0 / 2 000 caractères</p><div class="prompt-examples"')
@@ -78,6 +78,10 @@ css = replace_once(css, '.ai-panel > label { margin-top: 28px; font-size: 14px; 
 .trial-local-download { color:var(--secondary);text-decoration:none;white-space:nowrap; }
 .trial-local-download:hover { color:var(--text); }
 .trial-local-downloads { display:inline-flex;gap:14px;align-items:center;flex-wrap:wrap; }
+.app-footer { flex-wrap:wrap;row-gap:12px; }
+.app-footer .site-thanks { flex-basis:100%;margin:0;font-size:12px;line-height:1.5; }
+.app-footer .site-thanks a { color:var(--secondary);text-underline-offset:3px; }
+.app-footer .site-thanks a:hover { color:var(--text); }
 .trial-signup { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-top:22px; padding:22px 24px; border:1px solid var(--blue-line); border-radius:var(--radius); background:var(--surface); }
 .trial-signup[hidden] { display:none; }
 .trial-signup .eyebrow { margin:0 0 5px; color:var(--blue-light); font-size:11px; letter-spacing:1.4px; text-transform:uppercase; }
