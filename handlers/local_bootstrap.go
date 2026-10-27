@@ -110,6 +110,10 @@ func registerLocalBootstrapRoutes(r *gin.Engine) {
 			showLocalLauncherHelp(c)
 			return
 		}
+		// The token has been removed from the URL. Keep the form's same-origin
+		// Origin header: no-referrer makes browser form POSTs send Origin: null,
+		// which LocalHostOriginProtection correctly rejects.
+		c.Header("Referrer-Policy", "same-origin")
 		c.HTML(http.StatusOK, "setup.html", gin.H{"CSRF": middleware.GenerateCSRFToken(c), "Error": ""})
 	})
 	r.POST("/setup", middleware.RateLimitLogin(), func(c *gin.Context) {

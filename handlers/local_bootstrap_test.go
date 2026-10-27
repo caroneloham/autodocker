@@ -22,12 +22,15 @@ import (
 
 func TestLocalBootstrapRequiresLoopbackAndCSRF(t *testing.T) {
 	oldDB, oldBind, oldBypass, oldDemo := db.DB, config.BindHost, config.AuthBypass, config.DemoMode
+	oldNoSSL := config.NoSSL
 	defer func() {
 		db.DB, config.BindHost, config.AuthBypass, config.DemoMode = oldDB, oldBind, oldBypass, oldDemo
+		config.NoSSL = oldNoSSL
 	}()
 	t.Setenv("AUTODOCKER_LOCAL_BOOTSTRAP", "1")
 	t.Setenv("AUTODOCKER_BOOTSTRAP_TOKEN", strings.Repeat("a", 64))
 	config.BindHost, config.AuthBypass, config.DemoMode = "127.0.0.1", false, false
+	config.NoSSL = true
 	conn, err := sql.Open("sqlite", filepath.Join(t.TempDir(), "auth.db"))
 	if err != nil {
 		t.Fatal(err)
@@ -43,6 +46,7 @@ func TestLocalBootstrapRequiresLoopbackAndCSRF(t *testing.T) {
 	r.Use(middleware.LocalHostOriginProtection())
 	r.Use(middleware.SessionRecovery())
 	r.Use(middleware.LiveAccountSession())
+	r.Use(middleware.SecurityHeaders())
 	r.Use(middleware.CSRFProtection())
 	r.GET("/csrf-test", func(c *gin.Context) { c.String(http.StatusOK, middleware.GenerateCSRFToken(c)) })
 	registerLocalBootstrapRoutes(r)
@@ -56,6 +60,7 @@ func TestLocalBootstrapRequiresLoopbackAndCSRF(t *testing.T) {
 		req.RemoteAddr = "127.0.0.1:47999"
 		if body != nil {
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Set("Origin", "http://127.0.0.1")
 		}
 		if cookie != nil {
 			req.AddCookie(cookie)
@@ -95,9 +100,15 @@ func TestLocalBootstrapRequiresLoopbackAndCSRF(t *testing.T) {
 	if grant.Code != http.StatusSeeOther || grant.Header().Get("Location") != "/setup" || len(grant.Result().Cookies()) == 0 {
 		t.Fatalf("bootstrap grant failed: %d %s", grant.Code, grant.Header().Get("Location"))
 	}
+	if grant.Header().Get("Referrer-Policy") != "no-referrer" {
+		t.Fatal("token-bearing redirect must not disclose its URL as a referrer")
+	}
 	page := request("GET", "/setup", nil, grant.Result().Cookies()[0], false)
 	if page.Code != 200 {
 		t.Fatalf("setup unavailable: %d", page.Code)
+	}
+	if page.Header().Get("Referrer-Policy") != "same-origin" {
+		t.Fatal("clean setup form must preserve its Origin on browser form submission")
 	}
 	csrf := regexp.MustCompile(`csrf:([a-f0-9]+)`).FindStringSubmatch(page.Body.String())
 	if len(csrf) != 2 {
@@ -112,6 +123,19 @@ func TestLocalBootstrapRequiresLoopbackAndCSRF(t *testing.T) {
 		t.Fatalf("missing CSRF accepted: %d", response.Code)
 	}
 	form.Set("csrf_token", csrf[1])
+	// A valid grant and CSRF token must not authorize opaque or foreign origins.
+	for _, origin := range []string{"null", "https://evil.example", "http://127.0.0.1:9999"} {
+		req := httptest.NewRequest("POST", "http://127.0.0.1/setup", strings.NewReader(form.Encode()))
+		req.RemoteAddr = "127.0.0.1:47999"
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Origin", origin)
+		req.AddCookie(cookie)
+		out := httptest.NewRecorder()
+		r.ServeHTTP(out, req)
+		if out.Code != http.StatusForbidden {
+			t.Fatalf("untrusted setup Origin %q accepted: %d", origin, out.Code)
+		}
+	}
 	if response := request("POST", "/setup", form, cookie, false); response.Code != 303 {
 		t.Fatalf("owner creation failed: %d %s", response.Code, response.Body.String())
 	}
