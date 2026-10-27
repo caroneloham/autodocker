@@ -56,6 +56,8 @@ Le navigateur s’ouvre pour créer votre compte propriétaire. Dans **Mon compt
 
 ## Documentation
 
+- [Wiki : installation et utilisation](https://github.com/caroneloham/autodocker/wiki).
+
 - [Développer depuis les sources](docs/Developper.md) : prérequis Go, tests et lancement local.
 - [Construire et héberger l’essai public](docs/Essai-public.md) : Docker Tracer, configuration et quotas.
 - [Contribuer](CONTRIBUTING.md) · [Signaler une vulnérabilité](SECURITY.md) · [Logos et marques](docs/attributions/Logos-et-marques.txt).
