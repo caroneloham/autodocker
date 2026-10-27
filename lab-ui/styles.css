@@ -2959,7 +2959,7 @@ html[data-user-mode="basic"] .copilot-fab {
   overflow: hidden;
 }
 
-/* New grouped tabs — grid 2x2 */
+/* New grouped tabs - grid 2x2 */
 .tools-tabs-grouped {
   display: grid;
   grid-template-columns: 1fr 1fr;

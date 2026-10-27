@@ -4,7 +4,7 @@
 
 AutoDocker aide à créer une infrastructure Docker à partir d'un formulaire ou d'une demande en langage naturel. L'application locale peut aussi se connecter à Docker ou Docker Desktop et à une IA locale (Ollama, LM Studio, vLLM) ou à une API, depuis l'interface graphique. La génération manuelle reste utilisable sans fournisseur d'IA ni moteur Docker.
 
-**Essayer en ligne :** [autodocker.eu/essai](https://autodocker.eu/essai/) — génération, export et visualisation d'un fichier Compose. L'essai public dispose d'une IA réelle avec quota. Il n'expose pas les fonctions locales de gestion de l'hôte Docker.
+**Essayer en ligne :** [autodocker.eu/essai](https://autodocker.eu/essai/) - génération, export et visualisation d'un fichier Compose. L'essai public dispose d'une IA réelle avec quota. Il n'expose pas les fonctions locales de gestion de l'hôte Docker.
 
 **Installer sur son ordinateur :** [télécharger la dernière version pour Windows ou Linux](https://github.com/caroneloham/autodocker/releases), extraire l'archive complète et lancer le script fourni. Le premier lancement ouvre la création du compte propriétaire. Les comptes, projets et réglages restent dans le dossier extrait ; gardez ce dossier pour conserver vos données. Docker est nécessaire pour inspecter ou gérer des conteneurs, mais pas pour générer des fichiers.
 
