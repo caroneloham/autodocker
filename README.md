@@ -56,6 +56,8 @@ Le navigateur s’ouvre pour créer votre compte propriétaire. Dans **Mon compt
 
 ## Documentation
 
+- [Dépannage : erreurs courantes et solutions](docs/Depannage.md).
+
 - [Wiki : installation et utilisation](https://github.com/caroneloham/autodocker/wiki).
 
 - [Développer depuis les sources](docs/Developper.md) : prérequis Go, tests et lancement local.
